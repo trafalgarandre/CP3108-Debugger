@@ -1,4 +1,5 @@
 // list.js: Supporting lists in the Scheme style, using pairs made
+// list.js: Supporting lists in the Scheme style, using pairs made
 //          up of two-element JavaScript array (vector)
 
 // Author: Martin Henz
@@ -488,7 +489,7 @@ function enclose_by(frame,env) {
 function lookup_variable_value(variable,env) {
     function env_loop(env) {
         if (is_empty_environment(env)) {
-            error("Unbound variable: " + variable);
+            throw new Error("Unbound variable: " + variable);
         } else if (has_binding_in_frame(variable,first_frame(env))) {
             return first_frame(env)[variable];
         } else {
@@ -512,7 +513,7 @@ function assignment_value(stmt) {
 function set_variable_value(variable,value,env) {
     function env_loop(env) {
         if (is_empty_environment(env)) {
-            error("Undeclared variable in assignment: " + variable_name(variable));
+            throw new Error("Undeclared variable in assignment: " + variable_name(variable));
         } else if (has_binding_in_frame(variable_name(variable),first_frame(env))) {
             add_binding_to_frame(variable_name(variable),value,first_frame(env));
         } else {
@@ -713,7 +714,7 @@ function evaluate_boolean_operation(input_text,stmt, args, env) {
             return evaluate(input_text,list_ref(args, 1), env);
         }
     } else {
-        error("Unknown binary operator: " + operator(stmt), stmt_line(stmt));
+        throw new Error("Unknown binary operator: " + operator(stmt), stmt_line(stmt));
     }
 }
 
@@ -994,10 +995,10 @@ function extend_environment(vars,vals,base_env) {
         var new_frame = make_frame(vars,vals);
         return enclose_by(new_frame,base_env);
     } else if (var_length < val_length) {
-        error("Too many arguments supplied: " + JSON.stringify(vars) +
+        throw new Error("Too many arguments supplied: " + JSON.stringify(vars) +
             JSON.stringify(vals));
     } else {
-        error("Too few arguments supplied: " + JSON.stringify(vars) +
+        throw new Error("Too few arguments supplied: " + JSON.stringify(vars) +
             JSON.stringify(vals));
     }
 }
@@ -1088,18 +1089,18 @@ function apply(fun,args,obj) {
                     obj = tail_recursive_object(result);
                     env = tail_recursive_environment(result);
                 } else if (is_break_value(result) || is_continue_value(result)) {
-                    error("break and continue not allowed outside of function.");
+                    throw new Error("break and continue not allowed outside of function.");
                 } else {
                     return undefined;
                 }
             } else {
-                error('Incorrect number of arguments supplied for function ' +
+                throw new Error('Incorrect number of arguments supplied for function ' +
                     function_value_name(fun));
             }
         } else if (fun === undefined) {
-            error("Unknown function type for application: undefined");
+            throw new Error("Unknown function type for application: undefined");
         } else {
-            error("Unknown function type for application: " + JSON.stringify(fun),
+            throw new Error("Unknown function type for application: " + JSON.stringify(fun),
                 stmt_line(fun));
         }
     }
@@ -1131,8 +1132,10 @@ var primitive_functions =
     pair("is_empty_list", is_empty_list),
 
     //Intepreter functions
-    pair("parse", parse),
-    pair("error", error),
+    pair("parse", esprima.parse),
+    pair("error", function(x) {
+        throw new Error(x);
+    }),
 
     //Primitive functions
     pair("+", function(x,y) { return x + y; }),
@@ -1168,7 +1171,7 @@ function primitive_function_objects() {
 
 function make_primitive_function_object(primitive_function) {
     if (primitive_function.tag && primitive_function.tag !== "primitive") {
-        error('Cannot tag an already tagged object: ' + JSON.stringify(primitive_function) + '/' + primitive_function + '/' + primitive_function.tag);
+        throw new Error('Cannot tag an already tagged object: ' + JSON.stringify(primitive_function) + '/' + primitive_function + '/' + primitive_function.tag);
     } else {}
     primitive_function.tag = "primitive";
     return primitive_function;
@@ -1177,7 +1180,7 @@ function make_primitive_function_object(primitive_function) {
 var expires = undefined;
 function evaluate(input_text,stmt,env) {
     if ((new Date()).getTime() > expires) {
-        error('Time limit exceeded.');
+        throw new Error('Time limit exceeded.');
     } else if (is_self_evaluating(stmt)) {
         return stmt;
     } else if (is_empty_list_statement(stmt)) {
@@ -1221,7 +1224,7 @@ function evaluate(input_text,stmt,env) {
     } else if (is_object_method_application(stmt)) {
         var obj = object(stmt) ? evaluate(input_text,object(stmt),env) : window;
         if (!is_object(obj)) {
-            error('Cannot apply object method on non-object');
+            throw new Error('Cannot apply object method on non-object');
         } else {
             var op = evaluate_object_property_access(obj,
                 evaluate(input_text, object_property(stmt), env));
@@ -1266,7 +1269,7 @@ function evaluate(input_text,stmt,env) {
     } else if (is_property_assignment(stmt)) {
         return evaluate_property_assignment(input_text,stmt,env);
     } else {
-        error("Unknown expression type: " + JSON.stringify(stmt),
+        throw new Error("Unknown expression type: " + JSON.stringify(stmt),
             stmt_line(stmt));
     }
 }
@@ -1274,9 +1277,9 @@ function evaluate(input_text,stmt,env) {
 function evaluate_toplevel(input_text,stmt,env) {
     var value = evaluate(input_text,stmt,env);
     if (is_return_value(value) || is_tail_recursive_return_value(value)) {
-        error("return not allowed outside of function definition");
+        throw new Error("return not allowed outside of function definition");
     } else if (is_break_value(value) || is_continue_value(value)) {
-        error("break and continue not allowed outside of function.");
+        throw new Error("break and continue not allowed outside of function.");
     } else {
         return value;
     }
@@ -1314,7 +1317,7 @@ environment_stack.top = function() {
 
 function driver_loop() {
     var program_string = read("Enter your program here: ");
-    var program_syntax = parse(program_string);
+    var program_syntax = esprima.parse(program_string);
     if (is_tagged_object(program_syntax,"exit")) {
         return "interpreter completed";
     } else {
@@ -1415,7 +1418,7 @@ parse_and_evaluate = function(string, timeout) {
     
     var result = debug_evaluate_toplevel(
         string.replace(new RegExp('\r\n', 'g'), '\n').replace(new RegExp('\r', 'g'), '\n').split('\n'),
-        parse(string),
+        esprima.parse(string),
         environment_stack.top());
 
     // Reset the timeout.
@@ -1425,7 +1428,7 @@ parse_and_evaluate = function(string, timeout) {
 
 parser_register_native_function = function(name, func) {
     if (!is_function(func) && !is_primitive_function(func)) {
-        error("parser_register_native_function can only be used to register " +
+        throw new Error("parser_register_native_function can only be used to register " +
             "functions: " + JSON.stringify(func) + " given.");
     } else if (is_primitive_function(func)) {
         //No need to wrap another layer of indirection
@@ -1439,7 +1442,7 @@ parser_register_native_function = function(name, func) {
 
 parser_register_native_variable = function(name, object) {
     if (is_object(object) && is_function(object)) {
-        error("parser_register_native_variable can only be used to register " +
+        throw new Error("parser_register_native_variable can only be used to register " +
             "variables.");
     } else {
         define_variable(name, object, the_global_environment);
