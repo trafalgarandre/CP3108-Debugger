@@ -1198,6 +1198,9 @@ function evaluate_body(stmt) {
 	
 var expires = undefined;
 function evaluate(input_text,stmt,env) {
+    if (stmt.type === 'Program') {
+        stmt = evaluate_body(stmt);
+    }	
     if ((new Date()).getTime() > expires) {
         throw new Error('Time limit exceeded.');
     } else if (is_self_evaluating(stmt)) {
