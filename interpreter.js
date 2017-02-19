@@ -437,15 +437,21 @@ var parser_register_debug_handler = undefined;
 function stmt_line(stmt) {
     return stmt.line;
 }
+	
+function is_object(stmt) {
+// is_object has not been implemented yet	
+    return typeof(stmt) === 'object';
+}
+	
 function is_tagged_object(stmt,the_tag) {
+// stmt.tag = underfined
     return is_object(stmt) &&
-        stmt.tag === the_tag;
+        stmt.type === the_tag;
 }
 
 function is_self_evaluating(stmt) {
-    return is_number(stmt) ||
-        is_string(stmt) ||
-        is_boolean(stmt);
+// num, String, boolean are literal in esprima.parse
+	return is_tagged_object(stmt, 'Literal');
 }
 
 function is_empty_list_statement(stmt) {
@@ -1177,6 +1183,19 @@ function make_primitive_function_object(primitive_function) {
     return primitive_function;
 }
 
+function evaluate_body(stmt) {
+    //body in esprima.parse is like an array but we cannot access the length
+    let s = [];
+    let i = 0;
+    while(typeof(stmt.body[i]) !== 'undefined') {
+	i++;
+    }
+    for( j = i - 1; j >= 0; j--) {
+	s = pair(stmt.body[j],s);
+    }
+    return s;
+}	
+	
 var expires = undefined;
 function evaluate(input_text,stmt,env) {
     if ((new Date()).getTime() > expires) {
