@@ -536,8 +536,8 @@ function set_variable_value(variable,value,env) {
     function env_loop(env) {
         if (is_empty_environment(env)) {
             throw new Error("Undeclared variable in assignment: " + variable_name(variable));
-        } else if (has_binding_in_frame(variable_name(variable),first_frame(env))) {
-            add_binding_to_frame(variable_name(variable),value,first_frame(env));
+        } else if (has_binding_in_frame(variable,first_frame(env))) {
+            add_binding_to_frame(variable,value,first_frame(env));
         } else {
             env_loop(enclosing_environment(env));
         }
