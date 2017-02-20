@@ -455,7 +455,7 @@ function is_self_evaluating(stmt) {
 }
 
 function is_empty_list_statement(stmt) {
-    return is_tagged_object(stmt,"empty_list");
+    return is_tagged_object(stmt,[]);
 }
 
 function evaluate_empty_list_statement(input_text,stmt,env) {
@@ -471,7 +471,7 @@ function is_undefined_value(value) {
 }
 
 function is_variable(stmt) {
-    return is_tagged_object(stmt,"variable");
+    return is_tagged_object(stmt,"Identifier");
 }
 
 function variable_name(stmt) {
@@ -507,13 +507,13 @@ function lookup_variable_value(variable,env) {
 }
 
 function is_assignment(stmt) {
-    return is_tagged_object(stmt,"assignment");
+    return is_tagged_object(stmt,"AssignmentExpression");
 }
 function assignment_variable(stmt) {
-    return stmt.variable;
+    return stmt.left;
 }
 function assignment_value(stmt) {
-    return stmt.value;
+    return stmt.right;
 }
 
 function set_variable_value(variable,value,env) {
@@ -539,7 +539,7 @@ function evaluate_assignment(input_text,stmt,env) {
 }
 
 function is_array_expression(stmt) {
-    return is_tagged_object(stmt,"arrayinit");
+    return is_tagged_object(stmt,"ArrayExpression");
 }
 
 function array_expression_elements(stmt) {
@@ -556,11 +556,11 @@ function evaluate_array_expression(input_text,stmt, env) {
 }
 
 function is_object_expression(stmt) {
-    return is_tagged_object(stmt,"object");
+    return is_tagged_object(stmt,"ObjectExpression");
 }
 
 function object_expression_pairs(stmt) {
-    return stmt.pairs;
+    return stmt.properties;
 }
 
 function evaluate_object_expression(input_text,stmt,env) {
@@ -642,13 +642,13 @@ function evaluate_object_property_access(object, property) {
 }
 
 function is_var_definition(stmt) {
-    return is_tagged_object(stmt,"var_definition");
+    return is_tagged_object(stmt,"VariableDeclaration");
 }
 function var_definition_variable(stmt) {
-    return stmt.variable;
+    return stmt.id;
 }
 function var_definition_value(stmt) {
-    return stmt.value;
+    return stmt.init;
 }
 
 function make_frame(variables,values) {
@@ -682,27 +682,27 @@ function evaluate_var_definition(input_text,stmt,env) {
 }
 
 function is_if_statement(stmt) {
-    return is_tagged_object(stmt,"if");
+    return is_tagged_object(stmt,"IfStatement");
 }
 function if_predicate(stmt) {
-    return stmt.predicate;
+    return stmt.test;
 }
 function if_consequent(stmt) {
     return stmt.consequent;
 }
 function if_alternative(stmt) {
-    return stmt.alternative;
+    return stmt.alternate;
 }
 
 function is_true(x) {
     return ! is_false(x);
 }
 function is_false(x) {
-    return x === false || x === 0 || x === "" || is_undefined_value(x) || is_NaN(x);
+    return x === false || x === 0 || x === "" || is_undefined_value(x) || x === NaN;
 }
 
 function is_boolean_operation(stmt) {
-    return is_tagged_object(stmt, "boolean_op");
+    return is_tagged_object(stmt, "LogicalExpression");
 }
 
 function evaluate_boolean_operation(input_text,stmt, args, env) {
@@ -728,6 +728,7 @@ function evaluate_if_statement(input_text,stmt,env) {
     if (is_true(evaluate(input_text,if_predicate(stmt),env))) {
         return evaluate(input_text,if_consequent(stmt),env);
     } else {
+	if(equal(if_alternative(stmt), null)) return undefined;
         return evaluate(input_text,if_alternative(stmt),env);
     }
 }
@@ -753,13 +754,13 @@ function evaluate_ternary_statement(input_text,stmt, env) {
 }
 
 function is_while_statement(stmt) {
-    return is_tagged_object(stmt, "while");
+    return is_tagged_object(stmt, 'WhileStatement');
 }
 function while_predicate(stmt) {
-    return stmt.predicate;
+    return stmt.test;
 }
 function while_statements(stmt) {
-    return stmt.statements;
+    return stmt.body;
 }
 function evaluate_while_statement(input_text,stmt, env) {
     var result = undefined;
@@ -816,7 +817,7 @@ function evaluate_for_statement(input_text,stmt, env) {
 }
 
 function is_function_definition(stmt) {
-    return is_tagged_object(stmt,"function_definition");
+    return is_tagged_object(stmt,'FunctionDeclaration');
 }
 
 function function_definition_name(stmt) {
