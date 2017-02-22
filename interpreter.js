@@ -85,7 +85,7 @@ function is_list(xs) {
 // LOW-LEVEL FUNCTION, NOT JEDISCRIPT
 function list() {
     var the_list = [];
-    for (var i = arguments.length - 1; i >= 0; i--) {
+    for (let i = arguments.length - 1; i >= 0; i--) {
         the_list = pair(arguments[i], the_list);
     }
     return the_list;
@@ -437,19 +437,41 @@ var parser_register_debug_handler = undefined;
 function stmt_line(stmt) {
     return stmt.line;
 }
+	
+function is_object(stmt) {
+// is_object has not been implemented yet	
+    return typeof(stmt) === 'object';
+}
+	
 function is_tagged_object(stmt,the_tag) {
+// stmt.tag = underfined
     return is_object(stmt) &&
-        stmt.tag === the_tag;
+        stmt.type === the_tag;
 }
 
 function is_self_evaluating(stmt) {
-    return is_number(stmt) ||
-        is_string(stmt) ||
-        is_boolean(stmt);
+// num, String, boolean are literal in esprima.parse
+	return is_tagged_object(stmt, 'Literal');
 }
 
+function is_block_statement(stmt) {
+	return is_tagged_object(stmt, 'BlockStatement');
+}	
+
+function is_expression(stmt) {
+	return is_tagged_object(stmt, 'ExpressionStatement');
+}
+
+function is_binary_expression(stmt) {
+	return is_tagged_object(stmt, 'BinaryExpression')
+}	
+	
+function is_unary_expression(stmt) {
+	return is_tagged_object(stmt, 'UnaryExpression');
+}
+	
 function is_empty_list_statement(stmt) {
-    return is_tagged_object(stmt,"empty_list");
+    return is_tagged_object(stmt,[]);
 }
 
 function evaluate_empty_list_statement(input_text,stmt,env) {
@@ -465,7 +487,7 @@ function is_undefined_value(value) {
 }
 
 function is_variable(stmt) {
-    return is_tagged_object(stmt,"variable");
+    return is_tagged_object(stmt,"Identifier");
 }
 
 function variable_name(stmt) {
@@ -496,26 +518,26 @@ function lookup_variable_value(variable,env) {
             return env_loop(enclosing_environment(env));
         }
     }
-    var val = env_loop(env);
+    let val = env_loop(env);
     return val;
 }
 
 function is_assignment(stmt) {
-    return is_tagged_object(stmt,"assignment");
+    return is_tagged_object(stmt,"AssignmentExpression");
 }
 function assignment_variable(stmt) {
-    return stmt.variable;
+    return stmt.left;
 }
 function assignment_value(stmt) {
-    return stmt.value;
+    return stmt.right;
 }
 
 function set_variable_value(variable,value,env) {
     function env_loop(env) {
         if (is_empty_environment(env)) {
             throw new Error("Undeclared variable in assignment: " + variable_name(variable));
-        } else if (has_binding_in_frame(variable_name(variable),first_frame(env))) {
-            add_binding_to_frame(variable_name(variable),value,first_frame(env));
+        } else if (has_binding_in_frame(variable,first_frame(env))) {
+            add_binding_to_frame(variable,value,first_frame(env));
         } else {
             env_loop(enclosing_environment(env));
         }
@@ -525,7 +547,7 @@ function set_variable_value(variable,value,env) {
 }
 
 function evaluate_assignment(input_text,stmt,env) {
-    var value = evaluate(input_text,assignment_value(stmt),env);
+    let value = evaluate(input_text,assignment_value(stmt),env);
     set_variable_value(assignment_variable(stmt),
         value,
         env);
@@ -533,7 +555,7 @@ function evaluate_assignment(input_text,stmt,env) {
 }
 
 function is_array_expression(stmt) {
-    return is_tagged_object(stmt,"arrayinit");
+    return is_tagged_object(stmt,"ArrayExpression");
 }
 
 function array_expression_elements(stmt) {
@@ -541,7 +563,7 @@ function array_expression_elements(stmt) {
 }
 
 function evaluate_array_expression(input_text,stmt, env) {
-    var evaluated_elements = map(function(p) {
+    let evaluated_elements = map(function(p) {
             return evaluate(input_text,p,env);
         },
         array_expression_elements(stmt));
@@ -550,15 +572,15 @@ function evaluate_array_expression(input_text,stmt, env) {
 }
 
 function is_object_expression(stmt) {
-    return is_tagged_object(stmt,"object");
+    return is_tagged_object(stmt,"ObjectExpression");
 }
 
 function object_expression_pairs(stmt) {
-    return stmt.pairs;
+    return stmt.properties;
 }
 
 function evaluate_object_expression(input_text,stmt,env) {
-    var evaluated_pairs = map(function(p) {
+    let evaluated_pairs = map(function(p) {
             return pair(evaluate(input_text,head(p),env),
                 evaluate(input_text,tail(p),env));
         },
@@ -595,15 +617,15 @@ function property_assignment_value(stmt) {
 }
 
 function evaluate_property_assignment(input_text,stmt,env) {
-    var obj = evaluate(input_text,property_assignment_object(stmt),env);
-    var property = evaluate(input_text,property_assignment_property(stmt),env);
-    var value = evaluate(input_text,property_assignment_value(stmt),env);
+    let obj = evaluate(input_text,property_assignment_object(stmt),env);
+    let property = evaluate(input_text,property_assignment_property(stmt),env);
+    let value = evaluate(input_text,property_assignment_value(stmt),env);
     obj[property] = value;
     return value;
 }
 
 function is_property_access(stmt) {
-    var x = is_tagged_object(stmt,"property_access");
+    let x = is_tagged_object(stmt,"property_access");
     return x;
 }
 
@@ -619,8 +641,8 @@ function property_access_property(stmt) {
  * Evaluates a property access statement.
  */
 function evaluate_property_access(input_text,statement,env) {
-    var objec = evaluate(input_text,property_access_object(statement),env);
-    var property = evaluate(input_text,property_access_property(statement),env);
+    let objec = evaluate(input_text,property_access_object(statement),env);
+    let property = evaluate(input_text,property_access_property(statement),env);
     return evaluate_object_property_access(objec, property);
 }
 
@@ -628,7 +650,7 @@ function evaluate_property_access(input_text,statement,env) {
  * Actually does the property access.
  */
 function evaluate_object_property_access(object, property) {
-    var result = object[property];
+    let result = object[property];
 
     //We need to post-process the return value. Because objects can be native
     //we need to marshal native member functions into our primitive tag.
@@ -636,20 +658,20 @@ function evaluate_object_property_access(object, property) {
 }
 
 function is_var_definition(stmt) {
-    return is_tagged_object(stmt,"var_definition");
+    return is_tagged_object(stmt,"VariableDeclaration");
 }
 function var_definition_variable(stmt) {
-    return stmt.variable;
+    return stmt.id;
 }
 function var_definition_value(stmt) {
-    return stmt.value;
+    return stmt.init;
 }
 
 function make_frame(variables,values) {
     if (is_empty_list(variables) && is_empty_list(values)) {
         return {};
     } else {
-        var frame = make_frame(tail(variables),tail(values));
+        let frame = make_frame(tail(variables),tail(values));
         frame[head(variables)] = head(values);
         return frame;
     }
@@ -660,47 +682,56 @@ function add_binding_to_frame(variable,value,frame) {
     return undefined;
 }
 function has_binding_in_frame(variable,frame) {
-    return has_own_property(frame, variable);
+    return frame.hasOwnProperty(variable);
 }
 
 function define_variable(variable,value,env) {
-    var frame = first_frame(env);
+    let frame = first_frame(env);
     return add_binding_to_frame(variable,value,frame);
 }
 
 function evaluate_var_definition(input_text,stmt,env) {
-    define_variable(var_definition_variable(stmt),
-        evaluate(input_text,var_definition_value(stmt),env),
-        env);
-    return undefined;
+	let i = 0;
+	if (stmt.declarations !== undefined) {
+	    while(typeof(stmt.declarations[i]) !== 'undefined') {
+		i++;
+	    }
+	}
+	for(let j = 0; j < i; j++) {
+		let s = stmt.declarations[j];
+		define_variable(var_definition_variable(s),
+		evaluate(input_text,var_definition_value(s),env),
+		env);
+	   }
+	return undefined;
 }
 
 function is_if_statement(stmt) {
-    return is_tagged_object(stmt,"if");
+    return is_tagged_object(stmt,"IfStatement");
 }
 function if_predicate(stmt) {
-    return stmt.predicate;
+    return stmt.test;
 }
 function if_consequent(stmt) {
     return stmt.consequent;
 }
 function if_alternative(stmt) {
-    return stmt.alternative;
+    return stmt.alternate;
 }
 
 function is_true(x) {
     return ! is_false(x);
 }
 function is_false(x) {
-    return x === false || x === 0 || x === "" || is_undefined_value(x) || is_NaN(x);
+    return x === false || x === 0 || x === "" || is_undefined_value(x) || x === NaN;
 }
 
 function is_boolean_operation(stmt) {
-    return is_tagged_object(stmt, "boolean_op");
+    return is_tagged_object(stmt, "LogicalExpression");
 }
 
 function evaluate_boolean_operation(input_text,stmt, args, env) {
-    var lhs = evaluate(input_text,list_ref(args, 0), env);
+    let lhs = evaluate(input_text,list_ref(args, 0), env);
     if (operator(stmt) === '||') {
         if (lhs) {
             return lhs;
@@ -722,21 +753,22 @@ function evaluate_if_statement(input_text,stmt,env) {
     if (is_true(evaluate(input_text,if_predicate(stmt),env))) {
         return evaluate(input_text,if_consequent(stmt),env);
     } else {
+	if(equal(if_alternative(stmt), null)) return undefined;
         return evaluate(input_text,if_alternative(stmt),env);
     }
 }
 
 function is_ternary_statement(stmt) {
-    return is_tagged_object(stmt, "ternary");
+    return is_tagged_object(stmt, "ConditionalExpression");
 }
 function ternary_predicate(stmt) {
-    return stmt.predicate;
+    return stmt.test;
 }
 function ternary_consequent(stmt) {
     return stmt.consequent;
 }
 function ternary_alternative(stmt) {
-    return stmt.alternative;
+    return stmt.alternate;
 }
 function evaluate_ternary_statement(input_text,stmt, env) {
     if (is_true(evaluate(input_text,ternary_predicate(stmt), env))) {
@@ -747,16 +779,16 @@ function evaluate_ternary_statement(input_text,stmt, env) {
 }
 
 function is_while_statement(stmt) {
-    return is_tagged_object(stmt, "while");
+    return is_tagged_object(stmt, 'WhileStatement');
 }
 function while_predicate(stmt) {
-    return stmt.predicate;
+    return stmt.test;
 }
 function while_statements(stmt) {
-    return stmt.statements;
+    return stmt.body;
 }
 function evaluate_while_statement(input_text,stmt, env) {
-    var result = undefined;
+    let result = undefined;
     while (is_true(evaluate(input_text,while_predicate(stmt), env))) {
         var new_result = evaluate(input_text,while_statements(stmt), env);
         if (is_return_value(new_result) ||
@@ -789,11 +821,11 @@ function for_statements(stmt) {
     return stmt.statements;
 }
 function evaluate_for_statement(input_text,stmt, env) {
-    var result = undefined;
+    let result = undefined;
     for (evaluate(input_text,for_initialiser(stmt), env);
         is_true(evaluate(input_text,for_predicate(stmt), env));
         evaluate(input_text,for_finaliser(stmt), env)) {
-        var new_result = evaluate(input_text,for_statements(stmt), env);
+        let new_result = evaluate(input_text,for_statements(stmt), env);
 
         if (is_return_value(new_result) ||
             is_tail_recursive_return_value(new_result)) {
@@ -810,7 +842,7 @@ function evaluate_for_statement(input_text,stmt, env) {
 }
 
 function is_function_definition(stmt) {
-    return is_tagged_object(stmt,"function_definition");
+    return is_tagged_object(stmt,'FunctionDeclaration');
 }
 
 function function_definition_name(stmt) {
@@ -836,7 +868,7 @@ function evaluate_function_definition(input_text,stmt,env) {
         env);
 }
 function make_function_value(input_text,name,parameters,body,location,env) {
-    var result = (new Function("apply", "wrap_native_value",
+    let result = (new Function("apply", "wrap_native_value",
     "return function " + name + "() {\n\
         var args = map(wrap_native_value, vector_to_list(arguments));\n\
         return apply(arguments.callee, args, this);\n\
@@ -847,7 +879,7 @@ function make_function_value(input_text,name,parameters,body,location,env) {
     result.source_text = input_text;
     result.environment = env;
 
-    var text = get_input_text(input_text,location.start_line, location.start_col,
+    let text = get_input_text(input_text,location.start_line, location.start_col,
         location.end_line, location.end_col);
     result.toString = function() {
         return text;
@@ -881,10 +913,10 @@ function construction_type(stmt) {
     return stmt.type;
 }
 function evaluate_construction_statement(input_text,stmt, env) {
-    var typename = evaluate(input_text,construction_type(stmt), env);
-    var type = lookup_variable_value(typename, env);
-    var result = undefined;
-    var extraResult = undefined;
+    let typename = evaluate(input_text,construction_type(stmt), env);
+    let type = lookup_variable_value(typename, env);
+    let result = undefined;
+    let extraResult = undefined;
     if (is_primitive_function(type)) {
         result = Object.create(primitive_implementation(type).prototype);
     } else {
@@ -989,10 +1021,10 @@ function apply_primitive_function(fun,argument_list,object) {
 }
 
 function extend_environment(vars,vals,base_env) {
-    var var_length = length(vars);
-    var val_length = length(vals);
+    let var_length = length(vars);
+    let val_length = length(vals);
     if (var_length === val_length) {
-        var new_frame = make_frame(vars,vals);
+        let new_frame = make_frame(vars,vals);
         return enclose_by(new_frame,base_env);
     } else if (var_length < val_length) {
         throw new Error("Too many arguments supplied: " + JSON.stringify(vars) +
@@ -1063,13 +1095,13 @@ function tail_recursive_environment(value) {
 }
 
 function apply(fun,args,obj) {
-    var result = undefined;
+    let result = undefined;
     while (result === undefined || is_tail_recursive_return_value(result)) {
         if (is_primitive_function(fun)) {
             return apply_primitive_function(fun,args,obj);
         } else if (is_compound_function_value(fun)) {
             if (length(function_value_parameters(fun)) === length(args)) {
-                var env = extend_environment(function_value_parameters(fun),
+                let env = extend_environment(function_value_parameters(fun),
                         args,
                         function_value_environment(fun));
                 if (obj && is_object(obj)) {
@@ -1080,7 +1112,7 @@ function apply(fun,args,obj) {
                 //time because we might evaluate new functions within and those would
                 //require original input (since we hold references to the original
                 //source text)
-                var result = evaluate(function_value_source_text(fun),function_value_body(fun), env);
+                let result = evaluate(function_value_source_text(fun),function_value_body(fun), env);
                 if (is_return_value(result)) {
                     return return_value_content(result);
                 } else if (is_tail_recursive_return_value(result)) {
@@ -1135,21 +1167,7 @@ var primitive_functions =
     pair("parse", esprima.parse),
     pair("error", function(x) {
         throw new Error(x);
-    }),
-
-    //Primitive functions
-    pair("+", function(x,y) { return x + y; }),
-    pair("-", function(x,y) { return x - y; }),
-    pair("*", function(x,y) { return x * y; }),
-    pair("/", function(x,y) { return x / y; }),
-    pair("%", function(x,y) { return x % y; }),
-    pair("===", function(x,y) { return x === y; }),
-    pair("!==", function(x,y) { return x !== y; }),
-    pair("<", function(x,y) { return x < y; }),
-    pair(">", function(x,y) { return x > y; }),
-    pair("<=", function(x,y) { return x <= y; }),
-    pair(">=", function(x,y) { return x >= y; }),
-    pair("!", function(x) { return ! x; })
+    })
     );
 
 function primitive_function_names() {
@@ -1177,16 +1195,38 @@ function make_primitive_function_object(primitive_function) {
     return primitive_function;
 }
 
+function evaluate_body(stmt) {
+    //body in esprima.parse is like an array but we cannot access the length
+    let s = [];
+    let i = 0;
+    while(typeof(stmt.body[i]) !== 'undefined') {
+	i++;
+    }
+    for( j = i - 1; j >= 0; j--) {
+	s = pair(stmt.body[j],s);
+    }
+    return s;
+}	
+	
 var expires = undefined;
 function evaluate(input_text,stmt,env) {
+    if (stmt.type === 'Program') {
+        stmt = evaluate_body(stmt);
+    }	
     if ((new Date()).getTime() > expires) {
         throw new Error('Time limit exceeded.');
+    } else if (is_block_statement(stmt)) {
+	let new_env = extend_environment([], [], env);	
+	stmt = evaluate_body(stmt);
+	return evaluate(input_text, stmt, new_env);
+    } else if (is_expression(stmt)) {
+	return evaluate(input_text,stmt.expression,env);
     } else if (is_self_evaluating(stmt)) {
-        return stmt;
+        return stmt.value;
     } else if (is_empty_list_statement(stmt)) {
         return evaluate_empty_list_statement(input_text,stmt,env);
     } else if (is_variable(stmt)) {
-        return lookup_variable_value(variable_name(stmt),env);
+        return lookup_variable_value(stmt,env);
     } else if (is_assignment(stmt)) {
         return evaluate_assignment(input_text,stmt,env);
     } else if (is_var_definition(stmt)) {
@@ -1208,10 +1248,37 @@ function evaluate(input_text,stmt,env) {
             stmt,
             operands(stmt),
             env);
+    } else if(is_unary_expression(stmt)) {
+	return !evaluate(stmt.argument);
+    } else if(is_binary_expression(stmt)) {
+	let left = evaluate(input_text,stmt.left,env);
+	let right = evaluate(input_text,stmt.right,env);
+	switch (operator(stmt)) {
+		case '+': 
+			return left + right;
+		case '*':
+			return left * right;
+		case '/':
+			return left / right;
+		case '%':
+			return left % right;
+		case '===':
+			return left === right;
+		case '!==':
+			return left !== right;
+		case '<':
+			return left < right;
+		case '>':
+			return left > right;
+		case '<=':
+			return left <= right;
+		case '>=':
+			return left >= right;		
+	}    
     } else if (is_application(stmt)) {
-        var fun = evaluate(input_text,operator(stmt),env);
-        var args = list_of_values(input_text,operands(stmt),env);
-        var context = object(stmt) ? evaluate(input_text,object(stmt),env) : window;
+        let fun = evaluate(input_text,operator(stmt),env);
+        let args = list_of_values(input_text,operands(stmt),env);
+        let context = object(stmt) ? evaluate(input_text,object(stmt),env) : window;
 
         // We need to be careful. If we are calling debug() then we need
         // to give the environment to throw.
@@ -1222,11 +1289,11 @@ function evaluate(input_text,stmt,env) {
             return apply(fun, args, context);
         }
     } else if (is_object_method_application(stmt)) {
-        var obj = object(stmt) ? evaluate(input_text,object(stmt),env) : window;
+        let obj = object(stmt) ? evaluate(input_text,object(stmt),env) : window;
         if (!is_object(obj)) {
             throw new Error('Cannot apply object method on non-object');
         } else {
-            var op = evaluate_object_property_access(obj,
+            let op = evaluate_object_property_access(obj,
                 evaluate(input_text, object_property(stmt), env));
             return apply(op,
                 list_of_values(input_text, operands(stmt), env),
@@ -1249,9 +1316,9 @@ function evaluate(input_text,stmt,env) {
             //To make Apply homogenous, we need to do some voodoo to evaluate
             //the operands in the function application, but NOT actually apply
             //the function.
-            var fun = evaluate(input_text,operator(return_statement_expression(stmt)), env);
-            var arguments = list_of_values(input_text,operands(return_statement_expression(stmt)), env);
-            var obj = object(stmt) ? evaluate(input_text,object(return_statement_expression(stmt)), env) : window;
+            let fun = evaluate(input_text,operator(return_statement_expression(stmt)), env);
+            let arguments = list_of_values(input_text,operands(return_statement_expression(stmt)), env);
+            let obj = object(stmt) ? evaluate(input_text,object(return_statement_expression(stmt)), env) : window;
             return make_tail_recursive_return_value(fun, arguments, obj, env);
         } else {
             return make_return_value(
@@ -1275,7 +1342,7 @@ function evaluate(input_text,stmt,env) {
 }
 
 function evaluate_toplevel(input_text,stmt,env) {
-    var value = evaluate(input_text,stmt,env);
+    let value = evaluate(input_text,stmt,env);
     if (is_return_value(value) || is_tail_recursive_return_value(value)) {
         throw new Error("return not allowed outside of function definition");
     } else if (is_break_value(value) || is_continue_value(value)) {
@@ -1286,8 +1353,8 @@ function evaluate_toplevel(input_text,stmt,env) {
 }
 
 /// The top-level environment.
-var the_global_environment = (function() {
-    var initial_env = extend_environment(primitive_function_names(),
+let the_global_environment = (function() {
+    let initial_env = extend_environment(primitive_function_names(),
         primitive_function_objects(),
         the_empty_environment);
     define_variable("undefined", make_undefined_value(), initial_env);
@@ -1306,7 +1373,7 @@ var the_global_environment = (function() {
 /// By default this is the global environment. However, if a program forces early
 /// termination, we will install the current environment so that we can evaluate
 /// expressions in the "debug" environment. This allows debugging.
-var environment_stack = [the_global_environment];
+let environment_stack = [the_global_environment];
 environment_stack.top = function() {
     if (this.length === 0) {
         return null;
@@ -1316,12 +1383,12 @@ environment_stack.top = function() {
 };
 
 function driver_loop() {
-    var program_string = read("Enter your program here: ");
-    var program_syntax = esprima.parse(program_string);
+    let program_string = read("Enter your program here: ");
+    let program_syntax = esprima.parse(program_string);
     if (is_tagged_object(program_syntax,"exit")) {
         return "interpreter completed";
     } else {
-        var output = evaluate_toplevel(
+        let output = evaluate_toplevel(
             string.replace(new RegExp('\r\n', 'g'), '\n').replace(new RegExp('\r', 'g'), '\n').split('\n'),
             program_syntax, environment_stack.top());
         write(output);
@@ -1337,8 +1404,8 @@ function get_input_text(input_text, start_line, start_col, end_line, end_col) {
     if (start_line === end_line) {
         return input_text[start_line].substr(start_col, end_col - start_col + 1);
     } else {
-        var result = '';
-        var i = start_line;
+        let result = '';
+        let i = start_line;
         result = result + input_text[start_line].substr(start_col) + '\n';
         
         for (i = i + 1; i < end_line; i = i + 1) {
@@ -1416,7 +1483,7 @@ parse_and_evaluate = function(string, timeout) {
         expires = undefined;
     }
     
-    var result = debug_evaluate_toplevel(
+    let result = debug_evaluate_toplevel(
         string.replace(new RegExp('\r\n', 'g'), '\n').replace(new RegExp('\r', 'g'), '\n').split('\n'),
         esprima.parse(string),
         environment_stack.top());
