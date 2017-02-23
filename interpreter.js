@@ -84,7 +84,7 @@
             // list makes a list out of its arguments
             // LOW-LEVEL FUNCTION, NOT JEDISCRIPT
             function list() {
-                var the_list = [];
+                let the_list = [];
                 for (let i = arguments.length - 1; i >= 0; i--) {
                     the_list = pair(arguments[i], the_list);
                 }
@@ -96,7 +96,7 @@
             // list_to_vector throws an exception if the argument is not a list
             // LOW-LEVEL FUNCTION, NOT JEDISCRIPT
             function list_to_vector(lst){
-                var vector = [];
+                let vector = [];
                 while (!is_empty_list(lst)){
                     vector.push(head(lst));
                     lst = tail(lst);
@@ -113,8 +113,8 @@
                     return [];
                 }
 
-                var result = [];
-                for (var i = vector.length - 1; i >= 0; i = i - 1) {
+                let result = [];
+                for (let i = vector.length - 1; i >= 0; i = i - 1) {
                     result = pair(vector[i], result);
                 }
                 return result;
@@ -123,7 +123,7 @@
             // returns the length of a given argument list
             // throws an exception if the argument is not a list
             function length(xs) {
-                for (var i = 0; !is_empty_list(xs); ++i) {
+                for (let i = 0; !is_empty_list(xs); ++i) {
                     xs = tail(xs);
                 }
                 return i;
@@ -198,7 +198,7 @@
                     throw new Error("reverse(xs) expects a list as argument xs, but " +
                         "encountered " + xs);
                 }
-                var result = [];
+                let result = [];
                 for ( ; !is_empty_list(xs); xs = tail(xs)) {
                     result = pair(head(xs), result);
                 }
@@ -258,7 +258,7 @@
                 }
             }
             // for backwards-compatibility
-            var removeAll = remove_all;
+            let removeAll = remove_all;
 
             // equal computes the structural equality
             // over its arguments
@@ -375,14 +375,14 @@
             }
 
             //function display(str) {
-            //  var to_show = str;
+            //  let to_show = str;
             //    if (is_array(str) && str.length > 2) {
             //        to_show = '[' + str.toString() + ']';
             //  } else if (is_array(str) && is_empty_list(str)) {
             //      to_show = '[]';
             //  } else if (is_pair(str)) {
             //      to_show = '';
-            //      var stringize = function(item) {
+            //      let stringize = function(item) {
             //          if (is_empty_list(item)) {
             //              return '[]';
             //          } else if (is_pair(item)) {
@@ -408,21 +408,21 @@
              * @param String string The string to evaluate.
              * @returns The result of evaluating the given expression/program text.
              */
-            var parse_and_evaluate = undefined;
+            let parse_and_evaluate = undefined;
             /**
              * Registers a native JavaScript function for use within the interpreter.
              *
              * @param String name The name of the function to expose.
              * @param Function func The Function to export.
              */
-            var parser_register_native_function = undefined;
+            let parser_register_native_function = undefined;
             /**
              * Registers a native JavaScript variable for use within the interpreter.
              * 
              * @param String name The name of the variable to expose.
              * @param Object object The Object to export.
              */
-            var parser_register_native_variable = undefined;
+            let parser_register_native_variable = undefined;
             /**
              * Registers a native JavaScript handler for when a debug context is changed.
              *
@@ -431,7 +431,7 @@
              *                         call. If this is null, then there is no debug
              *                         context active.
              */
-            var parser_register_debug_handler = undefined;
+            let parser_register_debug_handler = undefined;
 
             (function() {
             function stmt_line(stmt) {
@@ -508,7 +508,7 @@
             function first_frame(env) {
                 return head(env);
             }
-            var the_empty_environment = [];
+            let the_empty_environment = [];
             function is_empty_environment(env) {
                 return is_empty_list(env);
             }
@@ -811,7 +811,7 @@
             function evaluate_while_statement(input_text,stmt, env) {
                 let result = undefined;
                 while (is_true(evaluate(input_text,while_predicate(stmt), env))) {
-                    var new_result = evaluate(input_text,while_statements(stmt), env);
+                    let new_result = evaluate(input_text,while_statements(stmt), env);
                     if (is_return_value(new_result) ||
                         is_tail_recursive_return_value(new_result)) {
                         return new_result;
@@ -906,7 +906,7 @@
             function make_function_value(input_text,name,parameters,body,location,env) {
                 let result = (new Function("apply", "wrap_native_value",
                 "return function " + name + "() {\n\
-                    var args = map(wrap_native_value, vector_to_list(arguments));\n\
+                    let args = map(wrap_native_value, vector_to_list(arguments));\n\
                     return apply(arguments.callee, args, this);\n\
                 }"))(apply, wrap_native_value);
                 result.type = 'function_value';
@@ -990,7 +990,7 @@
 
             function evaluate_sequence(input_text,stmts,env) {
                 while (!empty_stmt(stmts)) {
-                    var statement_result = evaluate(input_text,first_stmt(stmts), env);
+                    let statement_result = evaluate(input_text,first_stmt(stmts), env);
                     if (last_stmt(stmts)) {
                         return statement_result;
                     } else if (is_return_value(statement_result) ||
@@ -1145,7 +1145,7 @@
             function tail_recursive_environment(value) {
                 return value.env;
             }
-        var o = 0;
+        let o = 0;
             function apply(fun,args,obj) {
                 o++;
                 if (o === 70 ) {
@@ -1223,7 +1223,7 @@
                 }
             }
 
-            var primitive_functions = 
+            let primitive_functions = 
                 list(
                 //Builtin functions
                 pair("alert", alert),
@@ -1284,7 +1284,7 @@
                 return s;
             } 
             function* idMaker() {
-              var index = 0;
+              let index = 0;
               while(true)
                 yield index++;
             }  
@@ -1292,9 +1292,9 @@
                 console.log("have_yield");
                 yield undefined;
             }
-            var breakpoint_num = 0;
-            var expires = undefined;
-            var k = 0;
+            let breakpoint_num = 0;
+            let expires = undefined;
+            let k = 0;
             function evaluate(input_text,stmt,env) {
             //    console.log("evaluate");
            //     console.log(stmt);
@@ -1378,7 +1378,7 @@
 
              //       console.log("is_application");
                     if(stmt.callee.name === 'breakpoint') {
-                        var gen = idMaker();
+                        let gen = idMaker();
                         if(breakpoint_num === -1) {} else {
                             console.log("breakpoint");
                             breakpoint_num = 0;
@@ -1540,7 +1540,7 @@
             /// The registered debug handler. If this is set, when debug_break is called,
             /// this handler will get triggered with the line number of the triggering
             /// call.
-            var debug_handler = null;
+            let debug_handler = null;
 
             /// Breaks the interpreter, throwing the environment to the top level.
             function debug_break(env, line) {
