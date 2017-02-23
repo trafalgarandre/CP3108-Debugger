@@ -440,7 +440,7 @@
                 
             function is_object(stmt) {
             // is_object has not been implemented yet   
-                return typeof(stmt) === 'object';
+                return typeof(stmt) === 'object' && stmt !== NULL;
             }
                 
             function is_function(stmt) {
