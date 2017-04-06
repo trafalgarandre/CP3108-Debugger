@@ -448,24 +448,32 @@
                 return is_tagged_object(stmt, "ForStatement");
             }
             function for_initialiser(stmt) {
-                return stmt.initialiser;
+                return stmt.init;
             }
             function for_predicate(stmt) {
-                return stmt.predicate;
+                return stmt.test;
             }
             function for_finaliser(stmt) {
-                return stmt.finaliser;
+                return stmt.update;
             }
             function for_statements(stmt) {
-                return stmt.statements;
+                return stmt.body;
             }
             function evaluate_for_statement(input_text,stmt, env) {
                 let result = undefined;
                 for (evaluate(input_text,for_initialiser(stmt), env);
                     is_true(evaluate(input_text,for_predicate(stmt), env));
                     evaluate(input_text,for_finaliser(stmt), env)) {
+                    yield;
                     let new_result = evaluate(input_text,for_statements(stmt), env);
-
+                    let next_result;
+                            
+                    yield next_result = new_result.next();
+                    while (!next_result.done) {
+                        yield next_result = new_result.next();             
+                    }
+                    new_result = next_result.value;
+                            
                     if (is_return_value(new_result) ||
                         is_tail_recursive_return_value(new_result)) {
                         return new_result;
@@ -476,6 +484,7 @@
                     } else {
                         result = new_result;
                     }
+                    inter_current_line = for_initialiser(stmt).loc.start.line - 1;
                 }
                 return result;
             }
