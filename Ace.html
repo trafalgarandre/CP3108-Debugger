@@ -46,6 +46,9 @@ var w = 4;
 <input type = "button"
  onclick= "reset();" value = "Reset">
 
+<input type = "button"
+onclick = "nextbreakpoint();" value = "Run to next breakpoint">	
+	
 <p id = "demo">"Output: "</p>
 
 <table id ="variables" border = "1"></table>
@@ -98,6 +101,10 @@ var w = 4;
 	document.getElementById("variables").innerHTML = "";
 	editor.session.clearBreakpoints();
 	editor_breakpoints.clear();
+    }
+    function nextbreakpoint() {
+	off_debug();
+	next();
     }
     var Range = ace.require('ace/range').Range;
     var marker = editor.session.addMarker(new Range(0, 0, 0, 0), "myMarker", "fullLine");
