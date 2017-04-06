@@ -1,407 +1,3 @@
-            // list.js: Supporting lists in the Scheme style, using pairs made
-            // list.js: Supporting lists in the Scheme style, using pairs made
-            //          up of two-element JavaScript array (vector)
-
-            // Author: Martin Henz
-
-            // array test works differently for Rhino and
-            // the Firefox environment (especially Web Console)
-            function array_test(x) {
-                if (Array.isArray === undefined) {
-                    return x instanceof Array;
-                } else {
-                    return Array.isArray(x);
-                }
-            }
-
-            // pair constructs a pair using a two-element array
-            // LOW-LEVEL FUNCTION, NOT JEDISCRIPT
-            function pair(x, xs) {
-                return [x, xs];
-            }
-
-            // is_pair returns true iff arg is a two-element array
-            // LOW-LEVEL FUNCTION, NOT JEDISCRIPT
-            function is_pair(x) {
-                return array_test(x) && x.length === 2;
-            }
-
-            // head returns the first component of the given pair,
-            // throws an exception if the argument is not a pair
-            // LOW-LEVEL FUNCTION, NOT JEDISCRIPT
-            function head(xs) {
-                if (is_pair(xs)) {
-                    return xs[0];
-                } else {
-                    throw new Error("head(xs) expects a pair as "
-                        + "argument xs, but encountered "+xs);
-                }
-            }
-
-            // tail returns the second component of the given pair
-            // throws an exception if the argument is not a pair
-            // LOW-LEVEL FUNCTION, NOT JEDISCRIPT
-            function tail(xs) {
-                if (is_pair(xs)) {
-                    return xs[1];
-                } else {
-                    throw new Error("tail(xs) expects a pair as "
-                        + "argument xs, but encountered "+xs);
-                }
-
-            }
-
-            // is_empty_list returns true if arg is []
-            // LOW-LEVEL FUNCTION, NOT JEDISCRIPT
-            function is_empty_list(xs) {
-                if (array_test(xs)) {
-                    if (xs.length === 0) {
-                        return true;
-                    } else if (xs.length === 2) {
-                        return false;
-                    } else {
-                        throw new Error("is_empty_list(xs) expects empty list " +
-                            "or pair as argument xs, but encountered "+xs);
-                    }
-                } else {
-                    return false;
-                }
-            }
-
-            // is_list recurses down the list and checks that it ends with the empty list []
-            // does not throw any exceptions
-            // LOW-LEVEL FUNCTION, NOT JEDISCRIPT
-            function is_list(xs) {
-                for ( ; ; xs = tail(xs)) {
-                    if (is_empty_list(xs)) {
-                        return true;
-                    } else if (!is_pair(xs)) {
-                        return false;
-                    }
-                }
-            }
-
-            // list makes a list out of its arguments
-            // LOW-LEVEL FUNCTION, NOT JEDISCRIPT
-            function list() {
-                var the_list = [];
-                for (let i = arguments.length - 1; i >= 0; i--) {
-                    the_list = pair(arguments[i], the_list);
-                }
-                return the_list;
-            }
-
-            // list_to_vector returns vector that contains the elements of the argument list
-            // in the given order.
-            // list_to_vector throws an exception if the argument is not a list
-            // LOW-LEVEL FUNCTION, NOT JEDISCRIPT
-            function list_to_vector(lst){
-                var vector = [];
-                while (!is_empty_list(lst)){
-                    vector.push(head(lst));
-                    lst = tail(lst);
-                }
-                return vector;
-            }
-
-            // vector_to_list returns a list that contains the elements of the argument vector
-            // in the given order.
-            // vector_to_list throws an exception if the argument is not a vector
-            // LOW-LEVEL FUNCTION, NOT JEDISCRIPT
-            function vector_to_list(vector) {
-                if (vector.length === 0) {
-                    return [];
-                }
-
-                var result = [];
-                for (var i = vector.length - 1; i >= 0; i = i - 1) {
-                    result = pair(vector[i], result);
-                }
-                return result;
-            }
-
-            // returns the length of a given argument list
-            // throws an exception if the argument is not a list
-            function length(xs) {
-                for (var i = 0; !is_empty_list(xs); ++i) {
-                    xs = tail(xs);
-                }
-                return i;
-            }
-
-            // map applies first arg f to the elements of the second argument,
-            // assumed to be a list.
-            // f is applied element-by-element:
-            // map(f,[1,[2,[]]]) results in [f(1),[f(2),[]]]
-            // map throws an exception if the second argument is not a list,
-            // and if the second argument is a non-empty list and the first
-            // argument is not a function.
-            function map(f, xs) {
-                return (is_empty_list(xs))
-                    ? []
-                    : pair(f(head(xs)), map(f, tail(xs)));
-            }
-
-            // build_list takes a non-negative integer n as first argument,
-            // and a function fun as second argument.
-            // build_list returns a list of n elements, that results from
-            // applying fun to the numbers from 0 to n-1.
-            function build_list(n, fun) {
-                function build(i, fun, already_built) {
-                    if (i < 0) {
-                        return already_built;
-                    } else {
-                        return build(i - 1, fun, pair(fun(i),
-                                    already_built));
-                    }
-                }
-                return build(n - 1, fun, []);
-            }
-
-            // for_each applies first arg fun to the elements of the list passed as
-            // second argument. fun is applied element-by-element:
-            // for_each(fun,[1,[2,[]]]) results in the calls fun(1) and fun(2).
-            // for_each returns true.
-            // for_each throws an exception if the second argument is not a list,
-            // and if the second argument is a non-empty list and the
-            // first argument is not a function.
-            function for_each(fun, xs) {
-                if (!is_list(xs)) {
-                    throw new Error("for_each expects a list as argument xs, but " +
-                        "encountered " + xs);
-                }
-                for ( ; !is_empty_list(xs); xs = tail(xs)) {
-                    fun(head(xs));
-                }
-                return true;
-            }
-
-            // list_to_string returns a string that represents the argument list.
-            // It applies itself recursively on the elements of the given list.
-            // When it encounters a non-list, it applies toString to it.
-            function list_to_string(l) {
-                if (array_test(l) && l.length === 0) {
-                    return "[]";
-                } else {
-                    if (!is_pair(l)){
-                        return l.toString();
-                    }else{
-                        return "["+list_to_string(head(l))+","+list_to_string(tail(l))+"]";
-                    }
-                }
-            }
-
-            // reverse reverses the argument list
-            // reverse throws an exception if the argument is not a list.
-            function reverse(xs) {
-                if (!is_list(xs)) {
-                    throw new Error("reverse(xs) expects a list as argument xs, but " +
-                        "encountered " + xs);
-                }
-                var result = [];
-                for ( ; !is_empty_list(xs); xs = tail(xs)) {
-                    result = pair(head(xs), result);
-                }
-                return result;
-            }
-
-            // append first argument list and second argument list.
-            // In the result, the [] at the end of the first argument list
-            // is replaced by the second argument list
-            // append throws an exception if the first argument is not a list
-            function append(xs, ys) {
-                if (is_empty_list(xs)) {
-                    return ys;
-                } else {
-                    return pair(head(xs), append(tail(xs), ys));
-                }
-            }
-
-            // member looks for a given first-argument element in a given
-            // second argument list. It returns the first postfix sublist
-            // that starts with the given element. It returns [] if the
-            // element does not occur in the list
-            function member(v, xs){
-                for ( ; !is_empty_list(xs); xs = tail(xs)) {
-                    if (head(xs) === v) {
-                        return xs;
-                    }
-                }
-                return [];
-            }
-
-            // removes the first occurrence of a given first-argument element
-            // in a given second-argument list. Returns the original list
-            // if there is no occurrence.
-            function remove(v, xs){
-                if (is_empty_list(xs)) {
-                    return [];
-                } else {
-                    if (v === head(xs)) {
-                        return tail(xs);
-                    } else {
-                        return pair(head(xs), remove(v, tail(xs)));
-                    }
-                }
-            }
-
-            // Similar to remove. But removes all instances of v instead of just the first
-            function remove_all(v, xs) {
-                if (is_empty_list(xs)) {
-                    return [];
-                } else {
-                    if (v === head(xs)) {
-                        return remove_all(v, tail(xs));
-                    } else {
-                        return pair(head(xs), remove_all(v, tail(xs)))
-                    }
-                }
-            }
-            // for backwards-compatibility
-            var removeAll = remove_all;
-
-            // equal computes the structural equality
-            // over its arguments
-            function equal(item1, item2){
-                if (is_pair(item1) && is_pair(item2)) {
-                    return equal(head(item1), head(item2)) &&
-                        equal(tail(item1), tail(item2));
-                } else if (array_test(item1) && item1.length === 0 &&
-                       array_test(item2) && item2.length === 0) {
-                    return true;
-                } else {
-                    return item1 === item2;
-                }
-            }
-
-            // assoc treats the second argument as an association,
-            // a list of (index,value) pairs.
-            // assoc returns the first (index,value) pair whose
-            // index equal (using structural equality) to the given
-            // first argument v. Returns false if there is no such
-            // pair
-            function assoc(v, xs){
-                if (is_empty_list(xs)) {
-                    return false;
-                } else if (equal(v, head(head(xs)))) {
-                    return head(xs);
-                } else {
-                    return assoc(v, tail(xs));
-                }
-            }
-
-            // filter returns the sublist of elements of given list xs
-            // for which the given predicate function returns true.
-            function filter(pred, xs){
-                if (is_empty_list(xs)) {
-                    return xs;
-                } else {
-                    if (pred(head(xs))) {
-                        return pair(head(xs), filter(pred, tail(xs)));
-                    } else {
-                        return filter(pred, tail(xs));
-                    }
-                }
-            }
-
-            // enumerates numbers starting from start,
-            // using a step size of 1, until the number
-            // exceeds end.
-            function enum_list(start, end) {
-                if (start > end) {
-                    return [];
-                } else {
-                    return pair(start, enum_list(start + 1, end));
-                }
-            }
-
-            // Returns the item in list lst at index n (the first item is at position 0)
-            function list_ref(xs, n) {
-                if (n < 0) {
-                    throw new Error("list_ref(xs, n) expects a positive integer as " +
-                        "argument n, but encountered " + n);
-                }
-
-                for ( ; n > 0; --n) {
-                    xs = tail(xs);
-                }
-                return head(xs);
-            }
-
-            // accumulate applies given operation op to elements of a list
-            // in a right-to-left order, first apply op to the last element
-            // and an initial element, resulting in r1, then to the
-            // second-last element and r1, resulting in r2, etc, and finally
-            // to the first element and r_n-1, where n is the length of the
-            // list.
-            // accumulate(op,zero,list(1,2,3)) results in
-            // op(1, op(2, op(3, zero)))
-
-            function accumulate(op,initial,sequence) {
-                if (is_empty_list(sequence)) {
-                    return initial;
-                } else {
-                    return op(head(sequence),
-                              accumulate(op,initial,tail(sequence)));
-                }
-            }
-
-            // set_head(xs,x) changes the head of given pair xs to be x,
-            // throws an exception if the argument is not a pair
-            // LOW-LEVEL FUNCTION, NOT JEDISCRIPT
-
-            function set_head(xs,x) {
-                if (is_pair(xs)) {
-                    xs[0] = x;
-                    return undefined;
-                } else {
-                    throw new Error("set_head(xs,x) expects a pair as "
-                        + "argument xs, but encountered "+xs);
-                }
-            }
-
-            // set_tail(xs,x) changes the tail of given pair xs to be x,
-            // throws an exception if the argument is not a pair
-            // LOW-LEVEL FUNCTION, NOT JEDISCRIPT
-
-            function set_tail(xs,x) {
-                if (is_pair(xs)) {
-                    xs[1] = x;
-                    return undefined;
-                } else {
-                    throw new Error("set_tail(xs,x) expects a pair as "
-                        + "argument xs, but encountered "+xs);
-                }
-            }
-
-            //function display(str) {
-            //  var to_show = str;
-            //    if (is_array(str) && str.length > 2) {
-            //        to_show = '[' + str.toString() + ']';
-            //  } else if (is_array(str) && is_empty_list(str)) {
-            //      to_show = '[]';
-            //  } else if (is_pair(str)) {
-            //      to_show = '';
-            //      var stringize = function(item) {
-            //          if (is_empty_list(item)) {
-            //              return '[]';
-            //          } else if (is_pair(item)) {
-            //              return '[' + stringize(head(item)) + ', ' + stringize(tail(item)) + ']';
-            //          } else {
-            //              return item.toString();
-            //          }
-            //      }
-            //      to_show = stringize(str);
-            //  }
-            //  //process.stdout.write(to_show);
-            //  if (typeof to_show === 'function' && to_show.toString) {
-            //      console.log(to_show.toString());
-            //  } else {
-            //      console.log(to_show);
-            //  }
-            //  return str;
-            //} 
-
             /**
              * Parses the given string and returns the evaluated result.
              *
@@ -433,21 +29,16 @@
              */
             var parser_register_debug_handler = undefined;
 
-            (function() {
+        (function(){
             function stmt_line(stmt) {
                 return stmt.line;
-            }
-                
-            function is_object(stmt) {
-            // is_object has not been implemented yet   
-                return typeof(stmt) === 'object';
             }
                 
             function is_function(stmt) {
                 return typeof(stmt) === 'function';
             }
             function is_tagged_object(stmt,the_tag) {
-            // stmt.tag = underfined
+            // stmt.tag = undefined
                 return stmt !== undefined &&is_object(stmt) &&
                     stmt.type === the_tag;
             }
@@ -471,7 +62,7 @@
             }
 
             function is_binary_expression(stmt) {
-                return is_tagged_object(stmt, 'BinaryExpression')
+                return is_tagged_object(stmt, 'BinaryExpression');
             }   
                 
             function is_unary_expression(stmt) {
@@ -519,7 +110,6 @@
             function lookup_variable_value(variable,env) {
                 //console.log(variable);
                 function env_loop(env) {
-                    console.log(first_frame(env)[variable]);
                     if (is_empty_environment(env)) {
                         throw new Error("Unbound variable: " + variable);
                     } else if (has_binding_in_frame(variable,first_frame(env))) {
@@ -535,7 +125,7 @@
             }
 
             function is_assignment(stmt) {
-                return is_tagged_object(stmt,"AssignmentExpression");
+                return is_tagged_object(stmt,"AssignmentExpression") && is_tagged_object(stmt.left, "Identifier");
             }
             function assignment_variable(stmt) {
                 return stmt.left.name;
@@ -570,8 +160,10 @@
                 return is_tagged_object(stmt,"ArrayExpression");
             }
 
+            
+
             function array_expression_elements(stmt) {
-                return stmt.elements;
+                return  vector_to_list(stmt.elements);
             }
 
             function evaluate_array_expression(input_text,stmt, env) {
@@ -588,13 +180,13 @@
             }
 
             function object_expression_pairs(stmt) {
-                return stmt.properties;
+                return vector_to_list(stmt.properties);
             }
 
             function evaluate_object_expression(input_text,stmt,env) {
                 let evaluated_pairs = map(function(p) {
-                        return pair(evaluate(input_text,head(p),env),
-                            evaluate(input_text,tail(p),env));
+                        return pair(p.key.name,
+                            evaluate(input_text,p.value,env));
                     },
                     object_expression_pairs(stmt));
                 
@@ -613,32 +205,30 @@
 
 
             function is_property_assignment(stmt) {
-                return is_tagged_object(stmt,"property_assignment");
+                return is_tagged_object(stmt,"AssignmentExpression") && is_tagged_object(stmt.left, "MemberExpression");
             }
-
             function property_assignment_object(stmt) {
-                return stmt.object;
+                return stmt.left.object;
             }
 
             function property_assignment_property(stmt) {
-                return stmt.property;
+                return stmt.left.property.name;
             }
 
             function property_assignment_value(stmt) {
-                return stmt.value;
+                return stmt.right;
             }
 
             function evaluate_property_assignment(input_text,stmt,env) {
                 let obj = evaluate(input_text,property_assignment_object(stmt),env);
-                let property = evaluate(input_text,property_assignment_property(stmt),env);
+                let property = property_assignment_property(stmt);
                 let value = evaluate(input_text,property_assignment_value(stmt),env);
                 obj[property] = value;
                 return value;
             }
 
             function is_property_access(stmt) {
-                let x = is_tagged_object(stmt,"property_access");
-                return x;
+                return is_tagged_object(stmt,"MemberExpression");
             }
 
             function property_access_object(stmt) {
@@ -646,7 +236,7 @@
             }
 
             function property_access_property(stmt) {
-                return stmt.property;
+                return stmt.property.name;
             }
 
             /**
@@ -654,7 +244,7 @@
              */
             function evaluate_property_access(input_text,statement,env) {
                 let objec = evaluate(input_text,property_access_object(statement),env);
-                let property = evaluate(input_text,property_access_property(statement),env);
+                let property = property_access_property(statement);
                 return evaluate_object_property_access(objec, property);
             }
 
@@ -663,12 +253,12 @@
              */
             function evaluate_object_property_access(object, property) {
                 let result = object[property];
-
+                
                 //We need to post-process the return value. Because objects can be native
                 //we need to marshal native member functions into our primitive tag.
                 return wrap_native_value(result);
             }
-
+            
             function is_var_definition(stmt) {
                 return is_tagged_object(stmt,"VariableDeclaration");
             }
@@ -916,12 +506,10 @@
                 result.environment = env;
                // console.log(location);
                 let text = get_input_text(input_text,location.start.line, location.start.col,
-                    location.end.line, location.end.col);
+-                    location.end.line, location.end.col);
                 result.toString = function() {
                     return text;
                 };
-               // console.log(text);
-               // console.log(typeof(result));
                 result.toSource = result.toString;
                 return result;
             }
@@ -945,13 +533,13 @@
             }
 
             function is_construction(stmt) {
-                return is_tagged_object(stmt, "construction");
+                return is_tagged_object(stmt, "NewExpression");
             }
             function construction_type(stmt) {
-                return stmt.type;
+                return stmt.callee.name;
             }
             function evaluate_construction_statement(input_text,stmt, env) {
-                let typename = evaluate(input_text,construction_type(stmt), env);
+                let typename = construction_type(stmt);
                 let type = lookup_variable_value(typename, env);
                 let result = undefined;
                 let extraResult = undefined;
@@ -966,7 +554,7 @@
 
                 //EcmaScript 5.1 Section 13.2.2 [[Construct]]
                 if (is_object(extraResult)) {
-                    return extraResult
+                    return extraResult;
                 } else {
                     return result;
                 }
@@ -1005,11 +593,18 @@
                 }
             }
 
+            function is_this_expression(stmt) {
+                return is_tagged_object(stmt, "ThisExpression");
+            }
+
+            function evaluate_this_expression(input_text,stmt,env) {
+                return lookup_variable_value("this", env);
+            }
             function is_application(stmt) {
-                return is_tagged_object(stmt,"CallExpression");
+                return is_tagged_object(stmt,"CallExpression") && is_tagged_object(stmt.callee, "Identifier");
             }
             function is_object_method_application(stmt) {
-                return is_tagged_object(stmt,"object_method_application");
+                return is_tagged_object(stmt,"CallExpression") && is_tagged_object(stmt.callee, "MemberExpression");
             }
             function  operator(stmt) {
                 return stmt.operator;
@@ -1038,13 +633,11 @@
                 return stmt.object;
             }
             function object_property(stmt) {
-                return stmt.property;
+                return stmt.property.name;
             }
 
             function is_primitive_function(fun) {
-                console.log("this is primitive function");
-                console.log("my type is: " + fun.type);
-                console.log(is_tagged_object(fun, "primitive"));
+                
                 return is_tagged_function(fun,"primitive");
             }
             function primitive_implementation(fun) {
@@ -1145,6 +738,22 @@
             function tail_recursive_environment(value) {
                 return value.env;
             }
+            function is_function_expression(stmt) {
+                return is_tagged_object(stmt, "FunctionExpression");
+            }
+
+            function evaluate_function_expression(input_text, stmt, env) {
+                
+                let a = (make_function_value(
+                    input_text,
+                    "",
+                    [],
+                    function_definition_body(stmt),
+                    function_definition_text_location(stmt),
+                    env));
+                console.log("result is + " + a);
+                return a;
+            }
         var o = 0;
             function apply(fun,args,obj) {
                 o++;
@@ -1153,10 +762,7 @@
                 }
                 let result = undefined;
                 while (result === undefined || is_tail_recursive_return_value(result)) {
-                    console.log(fun);
-                    console.log(fun.type);
-                    console.log(is_primitive_function(fun));
-                    console.log("ahihi");
+                    
                     if (is_primitive_function(fun)) {
                         console.log(true);
                         return apply_primitive_function(fun,args,obj);
@@ -1165,7 +771,7 @@
                         //console.log(48);
                         //console.log(fun.params);
                         if (length(function_value_parameters(fun)) === length(args)) {
-                            console.log(49);
+                            
                             let env = extend_environment(function_value_parameters(fun),
                                     args,
                                     function_value_environment(fun));
@@ -1336,6 +942,8 @@
                     return evaluate_for_statement(input_text,stmt,env);
                 } else if (is_function_definition(stmt)) {
                     return evaluate_function_definition(input_text,stmt,env);
+                } else if (is_function_expression(stmt)){
+                        return evaluate_function_expression(input_text, stmt, env);
                 } else if (is_sequence(stmt)) {
                     return evaluate_sequence(input_text,stmt,env);
                 } else if (is_boolean_operation(stmt)) {
@@ -1401,22 +1009,24 @@
                         }
                     }
                 } else if (is_object_method_application(stmt)) {
-                    let obj = object(stmt) ? evaluate(input_text,object(stmt),env) : window;
+                    let obj =  evaluate(input_text,object(stmt.callee),env);
                     if (!is_object(obj)) {
                         throw new Error('Cannot apply object method on non-object');
                     } else {
                         let op = evaluate_object_property_access(obj,
-                            evaluate(input_text, object_property(stmt), env));
+                            object_property(stmt.callee));
                         return apply(op,
                             list_of_values(input_text, operands(stmt), env),
                             obj);
                     }
+                } else if(is_this_expression(stmt)) {
+                    return evaluate_this_expression(input_text,stmt,env);
                 } else if (is_break_statement(stmt)) {
                     return make_break_value();
                 } else if (is_continue_statement(stmt)) {
                     return make_continue_value();
                 } else if (is_return_statement(stmt)) {
-                    console.log("return-statement");
+                    
                     //Tail-call optimisation.
                     //Tail-calls are return statements which have no deferred operations,
                     //and they return the result of another function call.
@@ -1428,13 +1038,13 @@
                         //To make Apply homogenous, we need to do some voodoo to evaluate
                         //the operands in the function application, but NOT actually apply
                         //the function.
-                        console.log("application_return");
+                        
                         let fun = evaluate(input_text,return_statement_expression(stmt).callee, env);
                         let arguments = list_of_values(input_text,operands(return_statement_expression(stmt)), env);
                         let obj = object(stmt) ? evaluate(input_text,object(return_statement_expression(stmt)), env) : window;
                         return make_tail_recursive_return_value(fun, arguments, obj, env);
                     } else {
-                        console.log(5);
+                        
                         return make_return_value(
                             evaluate(input_text,return_statement_expression(stmt),
                             env));
@@ -1473,6 +1083,7 @@
                     the_empty_environment);
                 define_variable("undefined", make_undefined_value(), initial_env);
                 define_variable("NaN", NaN, initial_env);
+                define_variable("Math", Math, initial_env);
                 define_variable("Infinity", Infinity, initial_env);
                 define_variable("window", window, initial_env);
                 define_variable("debug", debug_break, initial_env);
@@ -1503,7 +1114,7 @@
                     return "interpreter completed";
                 } else {
                     let output = evaluate_toplevel(
-                        string.replace(new RegExp('\r\n', 'g'), '\n').replace(new RegExp('\r', 'g'), '\n').split('\n'),
+                        program_string.replace(new RegExp('\r\n', 'g'), '\n').replace(new RegExp('\r', 'g'), '\n').split('\n'),
                         program_syntax, environment_stack.top());
                     write(output);
                     return driver_loop();
@@ -1633,5 +1244,5 @@
             parser_register_debug_handler = function(handler) {
                 debug_handler = handler;
             }
-
-            })();
+        })();
+            
