@@ -31,12 +31,11 @@
 
 
 
-<pre id="editor">function foo(items) {
-    var i;
-    for (i = 0; i &lt; items.length; i++) {
-        alert("Ace Rocks " + items[i]);
-    }
-}</pre>
+<pre id="editor">var x = 1;
+var y = 2;
+var z = 3;
+var w = 4;
+</pre>
 
 <input type="button"
  onclick= "main()" value="Run">
@@ -45,11 +44,11 @@
  onclick= "next();" value="Next">
 
 <input type = "button"
- onclick= "editor.session.clearBreakpoints();" value = "Reset">
-
-<p id = "x">"x: "</p>
+ onclick= "reset();" value = "Reset">
 
 <p id = "demo">"Output: "</p>
+
+<table id ="variables" border = "1"></table>
 
 <script src = "https://unpkg.com/esprima@~3.1/dist/esprima.js"></script>
 <script src = "src-noconflict/interpreter2.js"></script>
@@ -90,10 +89,9 @@
 	
 	//document.getElementById('demo').innerHTML = "Output: " + debugger_next(editor_debugger);
         document.getElementById('demo').innerHTML = "Output: " + debugger_next(editor_debugger);
-	document.getElementById('x').innerHTML = "x: " + watch("x");
     }
     function reset() {
-	document.getElementById('x').innerHTML = "x: ";
+	document.getElementById("variables").innerHTML = "";
 	editor.session.clearBreakpoints();
 	editor_breakpoints.clear();
     }
