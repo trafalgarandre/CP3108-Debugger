@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>Editor</title>
+  <style type="text/css" media="screen">
+    body {
+        overflow: hidden;
+    }
+    #editor {
+        margin: 500;
+        position: absolute;
+        top: 150px;
+        bottom: 0;
+        left: 0;
+        right: 0;
+    }
+    .myMarker {
+    position:absolute;
+    background:rgba(100,200,100,0.5);
+    z-index:20
+    }
+    .ace_gutter-cell.ace_breakpoint{ 
+    border-radius: 20px 0px 0px 20px; 
+    box-shadow: 0px 0px 1px 1px red inset; 
+	} 
+  </style>
+</head>
+<body onload="">
+
+
+
+<pre id="editor">function foo(items) {
+    var i;
+    for (i = 0; i &lt; items.length; i++) {
+        alert("Ace Rocks " + items[i]);
+    }
+}</pre>
+
+<input type="button"
+ onclick= "main()" value="Run">
+
+<input type = "button"
+ onclick= "next();" value="Next">
+
+<input type = "button"
+ onclick= "editor.session.clearBreakpoints();" value = "Reset">
+
+<p id = "x">"x: "</p>
+
+<p id = "demo">"Output: "</p>
+
+<script src = "https://unpkg.com/esprima@~3.1/dist/esprima.js"></script>
+<script src = "src-noconflict/interpreter2.js"></script>
+<script src="src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
+<script src = "src-noconflict/debugger.js"></script>	
+
+
+<script>
+    var editor_breakpoints = new Set();
+    var editor = ace.edit("editor");
+    editor.setTheme("ace/theme/chrome");
+    editor.session.setMode("ace/mode/javascript");
+    editor.on("guttermousedown", function(e){ 
+    	var target = e.domEvent.target; 
+    	if (target.className.indexOf("ace_gutter-cell") == -1) 
+        	return; 
+    	if (!editor.isFocused()) 
+        	return; 
+    	if (e.clientX > 25 + target.getBoundingClientRect().left) 
+        	return; 		
+    	var row = e.getDocumentPosition().row;
+    	if (!editor_breakpoints.has(row)) {
+		e.editor.session.setBreakpoint(row);
+    		editor_breakpoints.add(row);
+    	} else {
+		e.editor.session.clearBreakpoint(row);
+		editor_breakpoints.delete(row);
+	}
+    	e.stop(); 
+    });
+    var editor_debugger;
+    function main() {
+	document.getElementById('demo').innerHTML = "Output: ";
+        editor_debugger = make_debugger(editor.session.getValue(), editor_breakpoints);
+	next();
+    }
+    function next() {
+	
+	//document.getElementById('demo').innerHTML = "Output: " + debugger_next(editor_debugger);
+        document.getElementById('demo').innerHTML = "Output: " + debugger_next(editor_debugger);
+	document.getElementById('x').innerHTML = "x: " + watch("x");
+    }
+    function reset() {
+	document.getElementById('x').innerHTML = "x: ";
+	editor.session.clearBreakpoints();
+	editor_breakpoints.clear();
+    }
+    var Range = ace.require('ace/range').Range;
+    var marker = editor.session.addMarker(new Range(0, 0, 0, 0), "myMarker", "fullLine");
+</script>
+
+</body>
+</html>
