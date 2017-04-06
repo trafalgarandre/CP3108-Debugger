@@ -1,3 +1,9 @@
+            // global variable
+            var inter_breakpoints;
+            var inter_current_line;
+            var current_environment;
+
+
             /**
              * Parses the given string and returns the evaluated result.
              *
@@ -33,7 +39,19 @@
             function stmt_line(stmt) {
                 return stmt.line;
             }
-                
+            
+            function check_generator(obj) {
+                return typeof(obj) == 'object' && typeof(obj.next) == 'function';           
+            }
+            
+            function evaluate_generator(gen) {
+                let next = gen.next();
+                while (!next.done) {
+                    next = gen.next();            
+                }
+                return next.value;
+            }
+                    
             function is_function(stmt) {
                 return typeof(stmt) === 'function';
             }
@@ -108,15 +126,12 @@
             }
 
             function lookup_variable_value(variable,env) {
-                //console.log(variable);
                 function env_loop(env) {
                     if (is_empty_environment(env)) {
                         throw new Error("Unbound variable: " + variable);
                     } else if (has_binding_in_frame(variable,first_frame(env))) {
-                      //  console.log('has_binding');
                         return first_frame(env)[variable];
                     } else {
-                        //console.log("env_loop");
                         return env_loop(enclosing_environment(env));
                     }
                 }
@@ -280,8 +295,6 @@
             }
 
             function add_binding_to_frame(variable,value,frame) {
-                //console.log("binding");
-                //console.log(value);
                 frame[variable] = value;
                 return undefined;
             }
@@ -290,8 +303,6 @@
             }
 
             function define_variable(variable,value,env) {
-                //console.log(8);
-                //console.log(value);
                 let frame = first_frame(env);
                 return add_binding_to_frame(variable,value,frame);
             }
@@ -305,8 +316,13 @@
                 }
                 for(let j = 0; j < i; j++) {
                     let s = stmt.declarations[j];
+                    let val = evaluate(input_text,var_definition_value(s),env);
+                    if (check_generator(val)) {
+                        val = evaluate_generator(val);            
+                    }
+                            
                     define_variable(var_definition_variable(s),
-                    evaluate(input_text,var_definition_value(s),env),
+                    val,
                     env);
                    }
                 return undefined;
@@ -357,13 +373,11 @@
 
             function evaluate_if_statement(input_text,stmt,env) {
                 if (is_true(evaluate(input_text,if_predicate(stmt),env))) {
-                    //console.log("if_true");
                     return evaluate(input_text,if_consequent(stmt),env);
                 } else {
                 if(equal(if_alternative(stmt), null)) {
                         return undefined;
                     } else {
-                      //  console.log("if_else");
                         return evaluate(input_text,if_alternative(stmt),env);
                     }
                 }
@@ -398,10 +412,22 @@
             function while_statements(stmt) {
                 return stmt.body;
             }
-            function evaluate_while_statement(input_text,stmt, env) {
+            function* evaluate_while_statement(input_text,stmt, env) {
                 let result = undefined;
-                while (is_true(evaluate(input_text,while_predicate(stmt), env))) {
-                    var new_result = evaluate(input_text,while_statements(stmt), env);
+                inter_current_line = while_predicate(stmt).log.start.line - 1;
+                let condition = evaluate(input_text,while_predicate(stmt), env);
+                        
+                while (is_true(condition)) {
+                    yield;
+                    let new_result = evaluate(input_text,while_statements(stmt), env);
+                    let next_result;
+                            
+                    yield next_result = new_result.next();
+                    while (!next_result.done) {
+                        yield next_result = new_result.next();             
+                    }
+                    new_result = next_result.value;
+                            
                     if (is_return_value(new_result) ||
                         is_tail_recursive_return_value(new_result)) {
                         return new_result;
@@ -412,12 +438,14 @@
                     } else {
                         result = new_result;
                     }
+                    inter_current_line = while_predicate(stmt).log.start.line - 1;
+                    condition = evaluate(input_text,while_predicate(stmt), env);
                 }
                 return result;
             }
 
             function is_for_statement(stmt) {
-                return is_tagged_object(stmt, "for");
+                return is_tagged_object(stmt, "ForStatement");
             }
             function for_initialiser(stmt) {
                 return stmt.initialiser;
@@ -576,9 +604,24 @@
                 return tail(stmts);
             }
 
-            function evaluate_sequence(input_text,stmts,env) {
+            function* evaluate_sequence(input_text,stmts,env) {
                 while (!empty_stmt(stmts)) {
+                            
+                    //stop before execute a statement
+                    inter_current_line = first_stmt(stmts).loc.start.line - 1;
+                    current_environment = env;
+                    yield;
+                            
                     var statement_result = evaluate(input_text,first_stmt(stmts), env);
+                    
+                    if (check_generator(statement_result)) {
+                        let next = statement_result.next();
+                        while (!next.done) {
+                            yield next = statement_result.next();          
+                        }
+                        statement_result = next.value;
+                    }
+                            
                     if (last_stmt(stmts)) {
                         return statement_result;
                     } else if (is_return_value(statement_result) ||
@@ -663,9 +706,6 @@
             }
 
             function extend_environment(vars,vals,base_env) {
-                //console.log("extend");
-                //console.log(vars);
-                //console.log(vals);
                 let var_length = length(vars);
                 let val_length = length(vals);
                 if (var_length === val_length) {
@@ -681,7 +721,7 @@
             }
 
             function is_break_statement(stmt) {
-                return is_tagged_object(stmt, "break_statement");
+                return is_tagged_object(stmt, "BreakStatement");
             }
 
             function make_break_value() {
@@ -693,7 +733,7 @@
             }
 
             function is_continue_statement(stmt) {
-                return is_tagged_object(stmt, "continue_statement");
+                return is_tagged_object(stmt, "ContinueStatement");
             }
 
             function make_continue_value() {
@@ -751,32 +791,20 @@
                     function_definition_body(stmt),
                     function_definition_text_location(stmt),
                     env));
-                console.log("result is + " + a);
                 return a;
             }
-        var o = 0;
-            function apply(fun,args,obj) {
-                o++;
-                if (o === 70 ) {
-                    return 0;
-                }
+                    
+            function* apply(fun,args,obj) {
                 let result = undefined;
                 while (result === undefined || is_tail_recursive_return_value(result)) {
-                    
                     if (is_primitive_function(fun)) {
-                        console.log(true);
                         return apply_primitive_function(fun,args,obj);
                     } else if (is_compound_function_value(fun)) {
-
-                        //console.log(48);
-                        //console.log(fun.params);
                         if (length(function_value_parameters(fun)) === length(args)) {
                             
                             let env = extend_environment(function_value_parameters(fun),
                                     args,
                                     function_value_environment(fun));
-                          //  console.log(has_binding_in_frame("x",first_frame(env)));
-                           // console.log(50);
                             if (obj && is_object(obj)) {
                                 add_binding_to_frame("this", obj, first_frame(env));
                             } else {}
@@ -785,26 +813,27 @@
                             //time because we might evaluate new functions within and those would
                             //require original input (since we hold references to the original
                             //source text)
-                          //  console.log(51);
                             let result = evaluate(function_value_source_text(fun),function_value_body(fun), env);
-                          //  console.log(51.5);
+                                    
+                            let next = result.next();
+                            while (!next.done) {
+                                yield next = result.next();            
+                            }
+                            result = next.value;
+                                    
                             if (is_return_value(result)) {
-                          //      console.log(53);
                                 return return_value_content(result);
                             } else if (is_tail_recursive_return_value(result)) {
-                           //     console.log(54);
                                 fun = tail_recursive_function(result);
                                 args = tail_recursive_arguments(result);
                                 obj = tail_recursive_object(result);
                                 env = tail_recursive_environment(result);
                             } else if (is_break_value(result) || is_continue_value(result)) {
-                          //      console.log(55);
                                 throw new Error("break and continue not allowed outside of function.");
                             } else {
                                 return undefined;
                             }
                         } else {
-                          //  console.log(52);
                             throw new Error('Incorrect number of arguments supplied for function ' +
                                 function_value_name(fun));
                         }
@@ -818,13 +847,14 @@
             }
 
             function list_of_values(input_text,exps,env) {
-             //   console.log("list_of_values");
-            //    console.log("first_operand");
                 if (no_operands(exps)) {
                     return [];
                 } else {
-              //      console.log(evaluate(input_text,first_operand(exps),env));
-                    return pair(evaluate(input_text,first_operand(exps),env),
+                    let first = evaluate(input_text,first_operand(exps),env);
+                    if (check_generator(first) {
+                        first = evaluate_generator(first);    
+                    }
+                    return pair(first,
                         list_of_values(input_text,rest_operands(exps),env));
                 }
             }
@@ -889,23 +919,8 @@
                 }
                 return s;
             } 
-            function* idMaker() {
-              var index = 0;
-              while(true)
-                yield index++;
-            }  
-            function* make_yield(){
-                console.log("have_yield");
-                yield undefined;
-            }
-            var breakpoint_num = 0;
-            var expires = undefined;
-            var k = 0;
+                    
             function evaluate(input_text,stmt,env) {
-            //    console.log("evaluate");
-           //     console.log(stmt);
-                k++;
-                if (k === 100) throw new Error();
                 if (stmt.type === 'Program') {
                     stmt = evaluate_body(stmt);
                 }   
@@ -923,16 +938,12 @@
                 } else if (is_empty_list_statement(stmt)) {
                     return evaluate_empty_list_statement(input_text,stmt,env);
                 } else if (is_variable(stmt)) {
-            //        console.log("look_up");
-            //        console.log(stmt.name);
-            //        console.log(has_binding_in_frame(stmt.name,first_frame(env)));
                     return lookup_variable_value(stmt.name,env);
                 } else if (is_assignment(stmt)) {
                     return evaluate_assignment(input_text,stmt,env);
                 } else if (is_var_definition(stmt)) {
                     return evaluate_var_definition(input_text,stmt,env);
                 } else if (is_if_statement(stmt)) {
-             //      console.log("if");
                     return evaluate_if_statement(input_text,stmt,env);
                 } else if (is_ternary_statement(stmt)) {
                     return evaluate_ternary_statement(input_text,stmt,env);
@@ -960,8 +971,6 @@
                     case '+': 
                         return left + right;
                     case '-':
-            //            console.log("minus");
-            //            console.log(left - right);
                         return left - right;
                     case '*':
                         return left * right;
@@ -983,31 +992,17 @@
                         return left >= right;       
                     }    
                 } else if (is_application(stmt)) {
-
-             //       console.log("is_application");
-                    if(stmt.callee.name === 'breakpoint') {
-                        var gen = idMaker();
-                        if(breakpoint_num === -1) {} else {
-                            console.log("breakpoint");
-                            breakpoint_num = 0;
-                            while(breakpoint_num === 0) {
-                                breakpoint_num = prompt();
-                            }
-                        }
-                    } else {
-                        let fun = evaluate(input_text,stmt.callee,env);
-                        let args = list_of_values(input_text,operands(stmt),env);
-                        let context = object(stmt) ? evaluate(input_text,object(stmt),env) : window;
-               //         console.log("going_to_apply");
-                        // We need to be careful. If we are calling debug() then we need
-                        // to give the environment to throw.
-                        if (fun === debug_break) {
-                            debug_break(env, stmt_line(stmt));
-                            // no return, exception thrown
-                        } else {
-                            return apply(fun, args, context);
-                        }
-                    }
+                     let fun = evaluate(input_text,stmt.callee,env);
+                     let args = list_of_values(input_text,operands(stmt),env);
+                     let context = object(stmt) ? evaluate(input_text,object(stmt),env) : window;
+                     // We need to be careful. If we are calling debug() then we need
+                     // to give the environment to throw.
+                     if (fun === debug_break) {
+                         debug_break(env, stmt_line(stmt));
+                         // no return, exception thrown
+                     } else {
+                         return apply(fun, args, context);
+                     }
                 } else if (is_object_method_application(stmt)) {
                     let obj =  evaluate(input_text,object(stmt.callee),env);
                     if (!is_object(obj)) {
@@ -1246,3 +1241,29 @@
             }
         })();
             
+            //public function relating to debugger
+            run = function (code, breakpoints) {
+                inter_current_line = -1;
+                inter_breakpoints = breakpoints;
+                return parse_and_evaluate(code);
+            }
+
+            check_current_line = function() {
+                if (inter_breakpoints.has(inter_current_line)) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }
+
+            get_current_line = function() {
+                return inter_current_line;
+            }
+            
+            check_variable = function(_variable) {
+                return lookup_variable_value(_variable, current_environment);
+            }
+            
+            get_current_env = function() {
+                return current_environment;
+            }
