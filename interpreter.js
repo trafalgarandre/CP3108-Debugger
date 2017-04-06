@@ -1087,6 +1087,7 @@
                     initial_env);
                 return initial_env;
             })();
+            the_global_environment = enclose_by({}, the_global_environment);
 
             /// For initialising /other/ toplevel environments.
             ///
