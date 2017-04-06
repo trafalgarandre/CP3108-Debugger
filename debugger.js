@@ -8,11 +8,13 @@ function make_debugger(code, _breakpoints) {
 	debugger_marker = null;
 	return run(code, _breakpoints);
 	// yield* run(code, breakpoints); 
+	variables_table();
 }
 
 
 function debugger_next(_debugger) {	
 	let temp = _debugger.next();
+	variables_table();
 	console.log(temp.value);
 	if (debugger_marker != null) editor.session.removeMarker(debugger_marker);
 	if (!temp.done) {
@@ -59,3 +61,31 @@ function line_to_mark() {
 get_current_val = function() {
 	return debugger_result;
 }
+function variables_table() {
+                
+                var variables = head(get_current_env());
+                var var_table = document.getElementById("variables");
+                var_table.innerHTML = "";
+                var table_row;
+                var var_name;
+                var var_value;
+                var name_td;
+                var value_td;
+                for(var x in variables) {    
+                    table_row = document.createElement("tr");
+
+                    name_td = document.createElement("td");
+                    value_td = document.createElement("td");
+
+                    var_name = document.createTextNode(x);
+                    var_value = document.createTextNode(variables[x]);
+
+                    name_td.appendChild(var_name);
+                    value_td.appendChild(var_value);
+
+                    table_row.appendChild(name_td);
+                    table_row.appendChild(value_td);
+
+                    var_table.appendChild(table_row);
+                }
+            }
