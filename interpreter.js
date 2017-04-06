@@ -1277,3 +1277,11 @@
             get_current_env = function() {
                 return current_environment;
             }
+            
+            on_debug = function() {
+                inter_debugger_on = true;
+            }
+            
+            off_debug = function() {
+                inter_debugger_off = false;
+            }
