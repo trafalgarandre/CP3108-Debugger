@@ -61,6 +61,15 @@ function line_to_mark() {
 get_current_val = function() {
 	return debugger_result;
 }
+
+function on_debug() {
+    debug_on = true;
+}
+
+function off_debug() {
+    debug_on = false;
+}
+
 function variables_table() {
                 
                 var variables = head(get_current_env());
