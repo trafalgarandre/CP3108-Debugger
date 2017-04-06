@@ -459,7 +459,7 @@
             function for_statements(stmt) {
                 return stmt.body;
             }
-            function evaluate_for_statement(input_text,stmt, env) {
+            function* evaluate_for_statement(input_text,stmt, env) {
                 let result = undefined;
                 for (evaluate(input_text,for_initialiser(stmt), env);
                     is_true(evaluate(input_text,for_predicate(stmt), env));
@@ -860,7 +860,7 @@
                     return [];
                 } else {
                     let first = evaluate(input_text,first_operand(exps),env);
-                    if (check_generator(first) {
+                    if (check_generator(first)) {
                         first = evaluate_generator(first);    
                     }
                     return pair(first,
