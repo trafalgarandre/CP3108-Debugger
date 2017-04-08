@@ -165,6 +165,9 @@
 
             function evaluate_assignment(input_text,stmt,env) {
                 let value = evaluate(input_text,assignment_value(stmt),env);
+                if (check_generator(value)) {
+                        value = evaluate_generator(value);            
+                    } 
                 set_variable_value(assignment_variable(stmt),
                     value,
                     env);
@@ -183,7 +186,11 @@
 
             function evaluate_array_expression(input_text,stmt, env) {
                 let evaluated_elements = map(function(p) {
-                        return evaluate(input_text,p,env);
+                        let value =  evaluate(input_text,p,env);
+                        if (check_generator(value)) {
+                            value = evaluate_generator(value);            
+                        }
+                        return value;
                     },
                     array_expression_elements(stmt));
 
@@ -200,8 +207,12 @@
 
             function evaluate_object_expression(input_text,stmt,env) {
                 let evaluated_pairs = map(function(p) {
+                        let value = evaluate(input_text,p.value,env);
+                        if (check_generator(value)) {
+                            value = evaluate_generator(value);            
+                        }  
                         return pair(p.key.name,
-                            evaluate(input_text,p.value,env));
+                            value);
                     },
                     object_expression_pairs(stmt));
                 
@@ -238,6 +249,9 @@
                 let obj = evaluate(input_text,property_assignment_object(stmt),env);
                 let property = property_assignment_property(stmt);
                 let value = evaluate(input_text,property_assignment_value(stmt),env);
+                if (check_generator(value)) {
+                    value = evaluate_generator(value);            
+                }
                 obj[property] = value;
                 return value;
             }
@@ -316,13 +330,13 @@
                 }
                 for(let j = 0; j < i; j++) {
                     let s = stmt.declarations[j];
-                    let val = evaluate(input_text,var_definition_value(s),env);
-                    if (check_generator(val)) {
-                        val = evaluate_generator(val);            
+                    let value = evaluate(input_text,var_definition_value(s),env);
+                    if (check_generator(value)) {
+                        value = evaluate_generator(value);            
                     }
                             
                     define_variable(var_definition_variable(s),
-                    val,
+                    value,
                     env);
                    }
                 return undefined;
