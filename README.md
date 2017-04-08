@@ -1,7 +1,8 @@
 # CP3108-Debugger
-Building Debugger for The Source
-How to test and update the interpreter?
-1. Download file "index.htm"
-2. Inspect and copy code from your "interpreter.js" to the console
-3. Test by using parse_and_evaluate to find errors and fix
-4. Go to http://esprima.org/demo/parse.html# to see how does esprima.parse work
+Building Debugger for The Source (DEMO) - Using esprima.parse for parser and ace editor for editor.
+How to test the debugger?
+1. Download all files.
+2. Download src-noconflict - https://github.com/ajaxorg/ace-builds/ (this is for the editor).
+3. Put Ace.html outside with src_noconflict.
+4. Put all other files into src_noconflict.
+5. Run Ace and test.
