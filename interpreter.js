@@ -542,8 +542,8 @@
                 result.source_text = input_text;
                 result.environment = env;
                // console.log(location);
-                let text = get_input_text(input_text,location.start.line, location.start.col,
--                    location.end.line, location.end.col);
+                var text = get_input_text(input_text,location.start.line, location.start.column,
+-                    location.end.line, location.end.column);
                 result.toString = function() {
                     return text;
                 };
