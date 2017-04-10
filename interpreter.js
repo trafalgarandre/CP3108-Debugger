@@ -386,13 +386,25 @@
             }
 
             function evaluate_if_statement(input_text,stmt,env) {
-                if (is_true(evaluate(input_text,if_predicate(stmt),env))) {
-                    return evaluate(input_text,if_consequent(stmt),env);
+                let predicate = evaluate(input_text,if_predicate(stmt), env);
+                if (check_generator(predicate)) {
+                    predicate = evaluate_generator(predicate);
+                }        
+                if (is_true(predicate)) {
+                    let consequent = evaluate(input_text,if_consequent(stmt), env);
+                    if (check_generator(consequent)) {
+                        consequent = evaluate_generator(consequent);
+                    }
+                    return consequent;
                 } else {
                 if(equal(if_alternative(stmt), null)) {
                         return undefined;
                     } else {
-                        return evaluate(input_text,if_alternative(stmt),env);
+                        let alternative = evaluate(input_text,if_alternative(stmt), env);
+                        if (check_generator(alternative)) {
+                            alternative = evaluated_generator(alternative);
+                        }
+                        return alternative;
                     }
                 }
             }
@@ -410,10 +422,22 @@
                 return stmt.alternate;
             }
             function evaluate_ternary_statement(input_text,stmt, env) {
-                if (is_true(evaluate(input_text,ternary_predicate(stmt), env))) {
-                    return evaluate(input_text,ternary_consequent(stmt), env);
+                let predicate = evaluate(input_text,ternary_predicate(stmt), env);
+                if (check_generator(predicate)) {
+                    predicate = evaluate_generator(predicate);
+                }
+                if (is_true(predicate)) {
+                    let consequent = evaluate(input_text,ternary_consequent(stmt), env);
+                    if (check_generator(consequent)) {
+                        consequent = evaluate_generator(consequent);
+                    }
+                    return consequent;        
                 } else {
-                    return evaluate(input_text,ternary_alternative(stmt), env);
+                    let alternative = evaluate(input_text,ternary_alternative(stmt), env);
+                    if (check_generator(alternative)) {
+                        alternative = evaluated_generator(alternative);
+                    }
+                    return alternative;
                 }
             }
 
@@ -556,8 +580,8 @@
                 result.source_text = input_text;
                 result.environment = env;
                // console.log(location);
-                var text = get_input_text(input_text,location.start.line, location.start.column,
--                    location.end.line, location.end.column);
+                let text = get_input_text(input_text,location.start.line, location.start.column,
+                    location.end.line, location.end.column);
                 result.toString = function() {
                     return text;
                 };
@@ -674,6 +698,9 @@
             }
             function  operator(stmt) {
                 return stmt.operator;
+            }
+            function boolean_operands(stmt) {
+                return list(stmt.left, stmt.right);            
             }
             function operands(stmt) {
                 let s = [];
@@ -935,10 +962,10 @@
                 let s = [];
                 let i = 0;
                 while(typeof(stmt.body[i]) !== 'undefined') {
-                i++;
+                    i++;
                 }
-                for( j = i - 1; j >= 0; j--) {
-                s = pair(stmt.body[j],s);
+                for(j = i - 1; j >= 0; j--) {
+                    s = pair(stmt.body[j],s);
                 }
                 return s;
             } 
@@ -983,7 +1010,7 @@
                 } else if (is_boolean_operation(stmt)) {
                     return evaluate_boolean_operation(input_text,
                         stmt,
-                        operands(stmt),
+                        boolean_operands(stmt),
                         env);
                 } else if(is_unary_expression(stmt)) {
                 return !evaluate(stmt.argument);
@@ -1012,8 +1039,10 @@
                     case '<=':
                         return left <= right;
                     case '>=':
-                        return left >= right;       
-                    }    
+                        return left >= right;
+                    case '==':
+                        return left == right;
+                    }
                 } else if (is_application(stmt)) {
                      let fun = evaluate(input_text,stmt.callee,env);
                      let args = list_of_values(input_text,operands(stmt),env);
