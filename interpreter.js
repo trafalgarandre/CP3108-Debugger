@@ -402,7 +402,7 @@
                     } else {
                         let alternative = evaluate(input_text,if_alternative(stmt), env);
                         if (check_generator(alternative)) {
-                            alternative = evaluated_generator(alternative);
+                            alternative = evaluate_generator(alternative);
                         }
                         return alternative;
                     }
