@@ -1,5 +1,4 @@
-  
-    // global variable
+      // global variable
     var inter_breakpoints;
     var inter_current_line;
     var current_environment;
@@ -1298,3 +1297,4 @@
     get_current_env = function() {
         return current_environment;
     }
+
