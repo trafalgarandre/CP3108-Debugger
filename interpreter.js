@@ -40,6 +40,7 @@
                 return stmt.line;
             }
             
+            // a not safe way to check generator
             function check_generator(obj) {
                 return typeof(obj) == 'object' && typeof(obj.next) == 'function';           
             }
@@ -55,8 +56,8 @@
             function is_function(stmt) {
                 return typeof(stmt) === 'function';
             }
+                    
             function is_tagged_object(stmt,the_tag) {
-            // stmt.tag = undefined
                 return stmt !== undefined &&is_object(stmt) &&
                     stmt.type === the_tag;
             }
@@ -86,7 +87,11 @@
             function is_unary_expression(stmt) {
                 return is_tagged_object(stmt, 'UnaryExpression');
             }
-                
+            
+            function is_update_expression(stmt) {
+                return is_tagged_object(stmt, 'UpdateExpression');
+            }         
+                    
             function is_empty_list_statement(stmt) {
                 return is_tagged_object(stmt,'EmptyStatement');
             }
@@ -162,7 +167,21 @@
                 env_loop(env);
                 return undefined;
             }
-
+            
+            function evaluate_update_expression(input_text,stmt,env) {
+                let variable = stmt.argument.name;
+                let val = lookup_variable_value(variable, env);
+                switch (operator(stmt)) {
+                    case '++':
+                        val++;
+                        break;
+                    case '--':
+                        val--;
+                        break;
+                }
+                set_variable_value(variable,val,env);
+            }
+                    
             function evaluate_assignment(input_text,stmt,env) {
                 let value = evaluate(input_text,assignment_value(stmt),env);
                 if (check_generator(value)) {
@@ -173,12 +192,10 @@
                     env);
                 return value;
             }
-
+           
             function is_array_expression(stmt) {
                 return is_tagged_object(stmt,"ArrayExpression");
             }
-
-            
 
             function array_expression_elements(stmt) {
                 return  vector_to_list(stmt.elements);
@@ -233,6 +250,7 @@
             function is_property_assignment(stmt) {
                 return is_tagged_object(stmt,"AssignmentExpression") && is_tagged_object(stmt.left, "MemberExpression");
             }
+                    
             function property_assignment_object(stmt) {
                 return stmt.left.object;
             }
@@ -247,6 +265,9 @@
 
             function evaluate_property_assignment(input_text,stmt,env) {
                 let obj = evaluate(input_text,property_assignment_object(stmt),env);
+                if (check_generator(obj)) {
+                    obj = evaluate_generator(obj);            
+                }
                 let property = property_assignment_property(stmt);
                 let value = evaluate(input_text,property_assignment_value(stmt),env);
                 if (check_generator(value)) {
@@ -277,7 +298,6 @@
                     objec = evaluate_generator(objec);
                 }
                 let property = property_access_property(statement);
-                
                 return evaluate_object_property_access(objec, property);
             }
 
@@ -359,7 +379,7 @@
             }
 
             function is_true(x) {
-                return ! is_false(x);
+                return !is_false(x);
             }
             function is_false(x) {
                 return x === false || x === 0 || x === "" || is_undefined_value(x) || x === NaN;
@@ -371,17 +391,28 @@
 
             function evaluate_boolean_operation(input_text,stmt, args, env) {
                 let lhs = evaluate(input_text,list_ref(args, 0), env);
+                if (check_generator(lhs)) {
+                    lhs = evaluate_generator(lhs);
+                }
                 if (operator(stmt) === '||') {
                     if (lhs) {
                         return lhs;
                     } else {
-                        return evaluate(input_text,list_ref(args, 1), env);
+                        let val = evaluate(input_text, list_ref(args, 1), env);
+                        if (check_generator(val)) {
+                            val = evaluate_generator(val);
+                        }
+                        return val;
                     }
                 } else if (operator(stmt) === '&&') {
                     if (!lhs) {
                         return lhs;
                     } else {
-                        return evaluate(input_text,list_ref(args, 1), env);
+                        let val = evaluate(input_text, list_ref(args, 1), env);
+                        if (check_generator(val)) {
+                            val = evaluate_generator(val);
+                        }
+                        return val;
                     }
                 } else {
                     throw new Error("Unknown binary operator: " + operator(stmt), stmt_line(stmt));
@@ -430,6 +461,7 @@
             function ternary_alternative(stmt) {
                 return stmt.alternate;
             }
+            //assuming for ternary_statement, predicate, consequent, alternative, each has one statement;
             function evaluate_ternary_statement(input_text,stmt, env) {
                 let predicate = evaluate(input_text,ternary_predicate(stmt), env);
                 if (check_generator(predicate)) {
@@ -463,17 +495,19 @@
                 let result = undefined;
                 inter_current_line = while_predicate(stmt).log.start.line - 1;
                 let condition = evaluate(input_text,while_predicate(stmt), env);
-                        
+                if (check_generator(condition)) {
+                    condition = evaluate_generator(condition);
+                }
                 while (is_true(condition)) {
                     yield;
-                    let new_result = evaluate(input_text,while_statements(stmt), env);
-                    let next_result;
                             
+                    let new_result = evaluate(input_text,while_statements(stmt), env);
+                    let next_result;        
                     yield next_result = new_result.next();
                     while (!next_result.done) {
                         yield next_result = new_result.next();             
                     }
-                    new_result = next_result.value;
+                    new_result = next_result.value;  
                             
                     if (is_return_value(new_result) ||
                         is_tail_recursive_return_value(new_result)) {
@@ -487,6 +521,9 @@
                     }
                     inter_current_line = while_predicate(stmt).loc.start.line - 1;
                     condition = evaluate(input_text,while_predicate(stmt), env);
+                    if (check_generator(condition)) {
+                        condition = evaluate_generator(condition);
+                    }
                 }
                 return result;
             }
@@ -506,6 +543,7 @@
             function for_statements(stmt) {
                 return stmt.body;
             }
+            // assuming for statement here is the normal for: for (let i = 0; i < 10; i++)
             function* evaluate_for_statement(input_text,stmt, env) {
                 let result = undefined;
                 for (evaluate(input_text,for_initialiser(stmt), env);
@@ -678,11 +716,9 @@
                         statement_result = next.value;
                     }
                     if (last_stmt(stmts)) {
-                        //console.log(is_tail_recursive_return_value(statement_result));
                         return statement_result;
                     } else if (is_return_value(statement_result) ||
                         is_tail_recursive_return_value(statement_result)) {
-                       // console.log(is_tail_recursive_return_value(statement_result));
                         return statement_result;
                     } else if (is_break_value(statement_result) ||
                         is_continue_value(statement_result)) {
@@ -740,7 +776,6 @@
             }
 
             function is_primitive_function(fun) {
-                
                 return is_tagged_function(fun,"primitive");
             }
             function primitive_implementation(fun) {
@@ -860,9 +895,7 @@
                     if (is_primitive_function(fun)) {
                         return apply_primitive_function(fun,args,obj);
                     } else if (is_compound_function_value(fun)) {
-                        //console.log("I AM A COMPOUND")
                         if (length(function_value_parameters(fun)) === length(args)) {
-                            
                             let env = extend_environment(function_value_parameters(fun),
                                     args,
                                     function_value_environment(fun));
@@ -882,6 +915,7 @@
                                 yield next = result.next();            
                             }
                             result = next.value;
+                                    
                             if (is_return_value(result)) {
                                 return return_value_content(result);
                             } else if (is_tail_recursive_return_value(result)) {
@@ -926,7 +960,17 @@
                 pair("alert", alert),
                 pair("prompt", prompt),
                 pair("parseInt", parseInt),
-
+                
+                //Stream library functions
+                pair("is_stream", is_stream),
+                pair("stream_tail", stream_tail),
+                pair("list_to_stream", list_to_stream),
+                pair("stream_to_list", stream_to_list),
+                pair("stream_length", stream_length),
+                pair("stream_map", stream_map),
+                pair("stream_reverse", stream_reverse),
+                pair("stream", stream),
+                            
                 //List library functions
                 pair("pair", pair),
                 pair("head", head),
@@ -935,6 +979,7 @@
                 pair("length", length),
                 pair("map", map),
                 pair("is_empty_list", is_empty_list),
+                pair("is_pair", is_pair),
 
                 //Intepreter functions
                 pair("parse", esprima.parse),
@@ -981,7 +1026,7 @@
                 return s;
             } 
                     
-            function evaluate(input_text,stmt,env) {
+            function evaluate(input_text,stmt,env) {        
                 if (stmt.type === 'Program') {
                     stmt = evaluate_body(stmt);
                 }   
@@ -989,11 +1034,11 @@
                 if ((new Date()).getTime() > expires) {
                     throw new Error('Time limit exceeded.');
                 } else if (is_block_statement(stmt)) {
-                let new_env = extend_environment([], [], env);  
-                stmt = evaluate_body(stmt);
-                return evaluate(input_text, stmt, new_env);
+                    let new_env = extend_environment([], [], env);  
+                    stmt = evaluate_body(stmt);
+                    return evaluate(input_text, stmt, new_env);
                 } else if (is_expression(stmt)) {
-                return evaluate(input_text,stmt.expression,env);
+                    return evaluate(input_text,stmt.expression,env);
                 } else if (is_self_evaluating(stmt)) {
                     return stmt.value;
                 } else if (is_empty_list_statement(stmt)) {
@@ -1004,6 +1049,8 @@
                     return evaluate_assignment(input_text,stmt,env);
                 } else if (is_var_definition(stmt)) {
                     return evaluate_var_definition(input_text,stmt,env);
+                } else if (is_update_expression(stmt)) {
+                    return evaluate_update_expression(input_text,stmt,env);
                 } else if (is_if_statement(stmt)) {
                     return evaluate_if_statement(input_text,stmt,env);
                 } else if (is_ternary_statement(stmt)) {
@@ -1024,41 +1071,50 @@
                         boolean_operands(stmt),
                         env);
                 } else if(is_unary_expression(stmt)) {
-                return !evaluate(stmt.argument);
+                    let argument = evaluate(input_text,stmt.argument,env);
+                    if (check_generator(argument)) {
+                        argument = evaluate_generator(argument);
+                    }
+                    switch (operator(stmt)) {
+                        case "!":
+                            return !argument;
+                        case "typeof":
+                            return typeof(argument);
+                    }
                 } else if(is_binary_expression(stmt)) {
-                let left = evaluate(input_text,stmt.left,env);
-                if (check_generator(left)) {
-                    left = evaluate_generator(left);
-                }
-                let right = evaluate(input_text,stmt.right,env);
-                if (check_generator(right)) {
-                    right = evaluate_generator(right);
-                }
-                switch (operator(stmt)) {
-                    case '+': 
-                        return left + right;
-                    case '-':
-                        return left - right;
-                    case '*':
-                        return left * right;
-                    case '/':
-                        return left / right;
-                    case '%':
-                        return left % right;
-                    case '===':
-                        return left === right;
-                    case '!==':
-                        return left !== right;
-                    case '<':
-                        return left < right;
-                    case '>':
-                        return left > right;
-                    case '<=':
-                        return left <= right;
-                    case '>=':
-                        return left >= right;
-                    case '==':
-                        return left == right;
+                    let left = evaluate(input_text,stmt.left,env);
+                    if (check_generator(left)) {
+                        left = evaluate_generator(left);
+                    }
+                    let right = evaluate(input_text,stmt.right,env);
+                    if (check_generator(right)) {
+                        right = evaluate_generator(right);
+                    }
+                    switch (operator(stmt)) {
+                        case '+': 
+                             return left + right;
+                        case '-':
+                             return left - right;
+                        case '*':
+                             return left * right;
+                        case '/':
+                             return left / right;
+                        case '%':
+                             return left % right;
+                        case '===':
+                             return left === right;
+                        case '!==':
+                             return left !== right;
+                        case '<':
+                             return left < right;
+                        case '>':
+                             return left > right;
+                        case '<=':
+                             return left <= right;
+                        case '>=':
+                             return left >= right;
+                        case '==':
+                             return left == right;
                     }
                 } else if (is_application(stmt)) {
                      let fun = evaluate(input_text,stmt.callee,env);
@@ -1114,7 +1170,6 @@
                         if (check_generator(val)) {
                             val = evaluate_generator(val);
                         }
-                        //console.log("return " + val);
                         return make_return_value(
                             val);
                     }
@@ -1175,6 +1230,7 @@
                     return this[this.length - 1];
                 }
             };
+                    
             function reset_environment() {
                 the_global_environment = (function() {
                 let initial_env = extend_environment(primitive_function_names(),
@@ -1340,13 +1396,14 @@
             }
         })();
             
-            //public function relating to debugger
+            // Public function relating to debugger
             run = function (code, breakpoints) {
                 inter_current_line = -1;
                 inter_breakpoints = breakpoints;
                 return parse_and_evaluate(code);
             }
-
+            
+            // Check whether current line has breakpoint
             check_current_line = function() {
                 if (inter_breakpoints.has(inter_current_line)) {
                     return true;
@@ -1354,15 +1411,18 @@
                     return false;
                 }
             }
-
+            
+            // Get the current line
             get_current_line = function() {
                 return inter_current_line;
             }
             
+            // Look up variable in current environment
             check_variable = function(_variable) {
                 return lookup_variable_value(_variable, current_environment);
             }
             
+            // Get the current environment
             get_current_env = function() {
                 return current_environment;
             }
