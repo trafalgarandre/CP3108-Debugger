@@ -273,7 +273,11 @@
              */
             function evaluate_property_access(input_text,statement,env) {
                 let objec = evaluate(input_text,property_access_object(statement),env);
+                if (check_generator(objec)) {
+                    objec = evaluate_generator(objec);
+                }
                 let property = property_access_property(statement);
+                
                 return evaluate_object_property_access(objec, property);
             }
 
@@ -282,7 +286,6 @@
              */
             function evaluate_object_property_access(object, property) {
                 let result = object[property];
-                
                 //We need to post-process the return value. Because objects can be native
                 //we need to marshal native member functions into our primitive tag.
                 return wrap_native_value(result);
@@ -385,7 +388,7 @@
                 }
             }
 
-            function evaluate_if_statement(input_text,stmt,env) {
+            function* evaluate_if_statement(input_text,stmt,env) {
                 inter_current_line = if_predicate(stmt).loc.start.line - 1;
                 yield;
                 let predicate = evaluate(input_text,if_predicate(stmt), env);
@@ -631,8 +634,7 @@
                     result = Object.create(type.prototype);
                 }
                 
-                extraResult = apply(type, list_of_values(input_text,operands(stmt),env), result);
-
+                extraResult = evaluate_generator(apply(type, list_of_values(input_text,operands(stmt),env), result));
                 //EcmaScript 5.1 Section 13.2.2 [[Construct]]
                 if (is_object(extraResult)) {
                     return extraResult;
@@ -675,11 +677,12 @@
                         }
                         statement_result = next.value;
                     }
-                            
                     if (last_stmt(stmts)) {
+                        //console.log(is_tail_recursive_return_value(statement_result));
                         return statement_result;
                     } else if (is_return_value(statement_result) ||
                         is_tail_recursive_return_value(statement_result)) {
+                       // console.log(is_tail_recursive_return_value(statement_result));
                         return statement_result;
                     } else if (is_break_value(statement_result) ||
                         is_continue_value(statement_result)) {
@@ -857,6 +860,7 @@
                     if (is_primitive_function(fun)) {
                         return apply_primitive_function(fun,args,obj);
                     } else if (is_compound_function_value(fun)) {
+                        //console.log("I AM A COMPOUND")
                         if (length(function_value_parameters(fun)) === length(args)) {
                             
                             let env = extend_environment(function_value_parameters(fun),
@@ -878,7 +882,6 @@
                                 yield next = result.next();            
                             }
                             result = next.value;
-                                    
                             if (is_return_value(result)) {
                                 return return_value_content(result);
                             } else if (is_tail_recursive_return_value(result)) {
@@ -1071,6 +1074,9 @@
                      }
                 } else if (is_object_method_application(stmt)) {
                     let obj =  evaluate(input_text,object(stmt.callee),env);
+                    if (check_generator(obj)) {
+                        obj = evaluate_generator(obj);
+                    }
                     if (!is_object(obj)) {
                         throw new Error('Cannot apply object method on non-object');
                     } else {
@@ -1099,16 +1105,18 @@
                         //To make Apply homogenous, we need to do some voodoo to evaluate
                         //the operands in the function application, but NOT actually apply
                         //the function.
-                        
                         let fun = evaluate(input_text,return_statement_expression(stmt).callee, env);
                         let arguments = list_of_values(input_text,operands(return_statement_expression(stmt)), env);
                         let obj = object(stmt) ? evaluate(input_text,object(return_statement_expression(stmt)), env) : window;
                         return make_tail_recursive_return_value(fun, arguments, obj, env);
                     } else {
-                        
+                        let val = evaluate(input_text,return_statement_expression(stmt),env);
+                        if (check_generator(val)) {
+                            val = evaluate_generator(val);
+                        }
+                        //console.log("return " + val);
                         return make_return_value(
-                            evaluate(input_text,return_statement_expression(stmt),
-                            env));
+                            val);
                     }
                 } else if (is_array_expression(stmt)) {
                     return evaluate_array_expression(input_text,stmt,env);
@@ -1138,7 +1146,7 @@
             }
 
             /// The top-level environment.
-            let the_global_environment = (function() {
+            var the_global_environment = (function() {
                 let initial_env = extend_environment(primitive_function_names(),
                     primitive_function_objects(),
                     the_empty_environment);
@@ -1154,13 +1162,12 @@
                 return initial_env;
             })();
             the_global_environment = enclose_by({}, the_global_environment);
-
-            /// For initialising /other/ toplevel environments.
+                    /// For initialising /other/ toplevel environments.
             ///
             /// By default this is the global environment. However, if a program forces early
             /// termination, we will install the current environment so that we can evaluate
             /// expressions in the "debug" environment. This allows debugging.
-            let environment_stack = [the_global_environment];
+            var environment_stack = [the_global_environment];
             environment_stack.top = function() {
                 if (this.length === 0) {
                     return null;
@@ -1168,7 +1175,32 @@
                     return this[this.length - 1];
                 }
             };
-
+            function reset_environment() {
+                the_global_environment = (function() {
+                let initial_env = extend_environment(primitive_function_names(),
+                    primitive_function_objects(),
+                    the_empty_environment);
+                define_variable("undefined", make_undefined_value(), initial_env);
+                define_variable("NaN", NaN, initial_env);
+                define_variable("Math", Math, initial_env);
+                define_variable("Infinity", Infinity, initial_env);
+                define_variable("window", window, initial_env);
+                define_variable("debug", debug_break, initial_env);
+                define_variable("debug_resume",
+                    make_primitive_function_object(debug_resume),
+                    initial_env);
+                return initial_env;
+                })();
+                the_global_environment = enclose_by({}, the_global_environment);
+                environment_stack = [the_global_environment];
+                environment_stack.top = function() {
+                    if (this.length === 0) {
+                        return null;
+                    } else {
+                        return this[this.length - 1];
+                    }
+                };
+            }
             function driver_loop() {
                 let program_string = read("Enter your program here: ");
                 let program_syntax = esprima.parse(program_string);
@@ -1269,7 +1301,7 @@
                 } else {
                     expires = undefined;
                 }
-                
+                reset_environment();
                 let result = debug_evaluate_toplevel(
                     string.replace(new RegExp('\r\n', 'g'), '\n').replace(new RegExp('\r', 'g'), '\n').split('\n'),
                     esprima.parse(string, {loc : true}),
