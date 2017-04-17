@@ -386,25 +386,31 @@
             }
 
             function evaluate_if_statement(input_text,stmt,env) {
+                inter_current_line = if_predicate(stmt).loc.start.line - 1;
+                yield;
                 let predicate = evaluate(input_text,if_predicate(stmt), env);
                 if (check_generator(predicate)) {
                     predicate = evaluate_generator(predicate);
                 }        
                 if (is_true(predicate)) {
                     let consequent = evaluate(input_text,if_consequent(stmt), env);
-                    if (check_generator(consequent)) {
-                        consequent = evaluate_generator(consequent);
+                    let next = consequent.next();
+                    yield;
+                    while (!next.done) {
+                        yield next = consequent.next();
                     }
-                    return consequent;
+                    return next.value;
                 } else {
                 if(equal(if_alternative(stmt), null)) {
                         return undefined;
                     } else {
                         let alternative = evaluate(input_text,if_alternative(stmt), env);
-                        if (check_generator(alternative)) {
-                            alternative = evaluated_generator(alternative);
+                        let next = alternative.next();
+                        yield;
+                        while (!next.done) {
+                            yield next = alternative.next();
                         }
-                        return alternative;
+                        return next.value;
                     }
                 }
             }
@@ -476,7 +482,7 @@
                     } else {
                         result = new_result;
                     }
-                    inter_current_line = while_predicate(stmt).log.start.line - 1;
+                    inter_current_line = while_predicate(stmt).loc.start.line - 1;
                     condition = evaluate(input_text,while_predicate(stmt), env);
                 }
                 return result;
@@ -1018,7 +1024,13 @@
                 return !evaluate(stmt.argument);
                 } else if(is_binary_expression(stmt)) {
                 let left = evaluate(input_text,stmt.left,env);
+                if (check_generator(left)) {
+                    left = evaluate_generator(left);
+                }
                 let right = evaluate(input_text,stmt.right,env);
+                if (check_generator(right)) {
+                    right = evaluate_generator(right);
+                }
                 switch (operator(stmt)) {
                     case '+': 
                         return left + right;
