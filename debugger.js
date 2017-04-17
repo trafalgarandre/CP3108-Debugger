@@ -8,13 +8,12 @@ function make_debugger(code, _breakpoints) {
 	debugger_marker = null;
 	return run(code, _breakpoints);
 	// yield* run(code, breakpoints); 
-	variables_table();
+	
 }
 
 
 function debugger_next(_debugger) {	
 	let temp = _debugger.next();
-	variables_table();
 	console.log(temp.value);
 	if (debugger_marker != null) editor.session.removeMarker(debugger_marker);
 	if (!temp.done) {
@@ -22,6 +21,7 @@ function debugger_next(_debugger) {
 			//console.log("mark");
 			debugger_result = temp.value;
             debugger_marker = editor.session.addMarker(new Range(line_to_mark(), 0, line_to_mark(), 1), "myMarker", "fullLine");
+			variables_table();
 			return debugger_result;
 		} else {
 			while (debug_on == false && !temp.done) {
@@ -31,10 +31,9 @@ function debugger_next(_debugger) {
 					on_debug();
 					debugger_marker = editor.session.addMarker(new Range(line_to_mark(), 0, line_to_mark(), 1), "myMarker", "fullLine");
 					debugger_result = temp.value;
+					variables_table();
 					return debugger_result;
 				} else {
-					console.log("DEBUGGER_RESULT");
-					console.log(temp.value);
 					debugger_result = temp.value; 
 					temp = _debugger.next();
 				}
@@ -45,6 +44,8 @@ function debugger_next(_debugger) {
 		if (temp.value != undefined) {
 			debugger_result = temp.value; 
 		}
+		variables_table();
+		console.log(debugger_result);
 		return debugger_result;
 	}
 }
@@ -69,18 +70,16 @@ function on_debug() {
 function off_debug() {
     debug_on = false;
 }
-
 function variables_table() {
-                
-                var variables = head(get_current_env());
-                var var_table = document.getElementById("variables");
+                let variables = head(get_current_env());
+                let var_table = document.getElementById("variables");
                 var_table.innerHTML = "";
-                var table_row;
-                var var_name;
-                var var_value;
-                var name_td;
-                var value_td;
-                for(var x in variables) {    
+                let table_row;
+                let var_name;
+                let var_value;
+                let name_td;
+                let value_td;
+                for(let x in variables) {
                     table_row = document.createElement("tr");
 
                     name_td = document.createElement("td");
