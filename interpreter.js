@@ -663,6 +663,7 @@
                     
                     if (check_generator(statement_result)) {
                         let next = statement_result.next();
+                        yield;
                         while (!next.done) {
                             yield next = statement_result.next();          
                         }
@@ -837,7 +838,7 @@
                 let a = (make_function_value(
                     input_text,
                     "",
-                    [],
+                    function_definition_parameters(stmt),
                     function_definition_body(stmt),
                     function_definition_text_location(stmt),
                     env));
@@ -866,6 +867,7 @@
                             let result = evaluate(function_value_source_text(fun),function_value_body(fun), env);
                                     
                             let next = result.next();
+                            yield;
                             while (!next.done) {
                                 yield next = result.next();            
                             }
