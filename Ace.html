@@ -42,7 +42,7 @@ var w = 4;
 </pre>
 
 <input type="button"
- onclick= "run()" value="Run">
+ onclick= "runButton()" value="Run">
 
 <input type = "button"
  onclick= "next();" value="Next">
@@ -108,7 +108,7 @@ onclick = "resume();" value = "Resume">
     var marker = editor.session.addMarker(new Range(0, 0, 0, 0), "myMarker", "fullLine");
     
     // Run function
-    function run() {
+    function runButton() {
 	document.getElementById('demo').innerHTML = "Output: ";
         editor_debugger = make_debugger(editor.session.getValue(), editor_breakpoints);
 	
