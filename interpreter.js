@@ -1398,6 +1398,7 @@
             
             // Public function relating to debugger
             run = function (code, breakpoints) {
+                reset_environment();
                 inter_current_line = -1;
                 inter_breakpoints = breakpoints;
                 return parse_and_evaluate(code);
