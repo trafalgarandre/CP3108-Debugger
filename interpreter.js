@@ -893,7 +893,9 @@
                 let result = undefined;
                 while (result === undefined || is_tail_recursive_return_value(result)) {
                     if (is_primitive_function(fun)) {
-                        return apply_primitive_function(fun,args,obj);
+                        let val = apply_primitive_function(fun,args,obj);
+                        if (check_generator(val)) val = evaluate_generator(val);
+                        return val;
                     } else if (is_compound_function_value(fun)) {
                         if (length(function_value_parameters(fun)) === length(args)) {
                             let env = extend_environment(function_value_parameters(fun),
