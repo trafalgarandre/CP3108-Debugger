@@ -3,30 +3,39 @@ var debug_on;
 
 var debugger_result;
 var debugger_marker;
+
+
+/*
+  Function relating to RUN in the DEMO
+  Parse and evaluating the code. Also Send the interpreter the breakpoints.
+  Initialize debug mode is off (have not reached any breakpoint)
+*/
 function make_debugger(code, _breakpoints) {
 	debug_on = false;
 	debugger_marker = null;
-	return run(code, _breakpoints);
-	// yield* run(code, breakpoints); 
-	
+	return run(code, _breakpoints);	
 }
 
-
+/*
+	Function dealing with how the debugger run.
+	If there is no breakpoint, then it will execute the whole program (run the generator until it finish)
+	Else it will stop there and wait for the next call (NEXT BUTTON)
+*/
 function debugger_next(_debugger) {	
 	let temp = _debugger.next();
 	console.log(temp.value);
 	if (debugger_marker != null) editor.session.removeMarker(debugger_marker);
 	if (!temp.done) {
 		if (debug_on) {
-			//console.log("mark");
+			// debugger is currently run line by line.
 			debugger_result = temp.value;
             debugger_marker = editor.session.addMarker(new Range(line_to_mark(), 0, line_to_mark(), 1), "myMarker", "fullLine");
 			variables_table();
 			return debugger_result;
 		} else {
+			//debugger is running either from the beginning (RUN BUTTON) or run to the next breakpoint (RESUME BUTTON)
 			while (debug_on == false && !temp.done) {
 				if (check_current_line()) {
-					//console.log("check_current_line is true");
 					debug_on = true;
 					on_debug();
 					debugger_marker = editor.session.addMarker(new Range(line_to_mark(), 0, line_to_mark(), 1), "myMarker", "fullLine");
