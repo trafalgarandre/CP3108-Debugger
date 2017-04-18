@@ -42,22 +42,23 @@ var w = 4;
 </pre>
 
 <input type="button"
- onclick= "main()" value="Run">
+ onclick= "run()" value="Run">
 
 <input type = "button"
  onclick= "next();" value="Next">
 
 <input type = "button"
- onclick= "reset();" value = "Reset">
+ onclick= "resetBreakpoints();" value = "ResetBreakpoints">
 
 <input type = "button"
-onclick = "nextbreakpoint();" value = "Run to next breakpoint">	
+onclick = "resume();" value = "Resume">	
 	
 <p id = "demo">"Output: "</p>
 
 <div class = "tab">
 <table  id ="variables" border = "1"></table>
 </div>
+	
 <script src="misc.js"></script>
 <script src="object.js"></script>
 <script src="list.js"></script>
@@ -66,14 +67,19 @@ onclick = "nextbreakpoint();" value = "Run to next breakpoint">
 <script src = "interpreter.js"></script>
 <script src="src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
 <script src = "debugger.js"></script>	
-
-
+	
 <script>
-    var editor_breakpoints = new Set();
+    // embedding Ace Editor
     var editor = ace.edit("editor");
     editor.setTheme("ace/theme/chrome");
     editor.session.setMode("ace/mode/javascript");
-    editor.on("guttermousedown", function(e){ 
+	
+    // Adding / Removing Breakpoints
+    var editor_breakpoints = new Set();
+	
+    editor.on("guttermousedown", function(e){
+	    
+	// make clicking margin == adding/removing breakpoints
     	var target = e.domEvent.target; 
     	if (target.className.indexOf("ace_gutter-cell") == -1) 
         	return; 
@@ -82,6 +88,8 @@ onclick = "nextbreakpoint();" value = "Run to next breakpoint">
     	if (e.clientX > 25 + target.getBoundingClientRect().left) 
         	return; 		
     	var row = e.getDocumentPosition().row;
+	    
+	//Adding and Removing
     	if (!editor_breakpoints.has(row)) {
 		e.editor.session.setBreakpoint(row);
     		editor_breakpoints.add(row);
@@ -91,29 +99,48 @@ onclick = "nextbreakpoint();" value = "Run to next breakpoint">
 	}
     	e.stop(); 
     });
+	
+    // the generator of the program
     var editor_debugger;
-    function main() {
+    
+    // Marker - the shading part when debugging
+    var Range = ace.require('ace/range').Range;
+    var marker = editor.session.addMarker(new Range(0, 0, 0, 0), "myMarker", "fullLine");
+    
+    // Run function
+    function run() {
 	document.getElementById('demo').innerHTML = "Output: ";
         editor_debugger = make_debugger(editor.session.getValue(), editor_breakpoints);
-	       next();
-    }
-    function next() {
 	
-	//document.getElementById('demo').innerHTML = "Output: " + debugger_next(editor_debugger);
-        document.getElementById('demo').innerHTML = "Output: " + debugger_next(editor_debugger);
-
+	// run the program - stop when there is a breakpoint
+	next();
     }
-    function reset() {
+	
+    /*
+    	debug mode is a mode memorise whether the program is executing line by line
+    	Cases:
+	Run: execute all if there is no breakpoint
+	Halt: if debug mode is off and there is a breakpoint, run until there then stop
+	      if debug mode is on, run to next line.
+    */
+    function next() {
+        document.getElementById('demo').innerHTML = "Output: " + debugger_next(editor_debugger);
+    }
+	
+    function resetBreakpoints() {
+	// clear table
 	document.getElementById("variables").innerHTML = "";
+	    
+	// clear breakponts
 	editor.session.clearBreakpoints();
 	editor_breakpoints.clear();
     }
-    function nextbreakpoint() {
+    
+    // debug_mode off then run next() like normal (same like push Run())	
+    function resume() {
 	off_debug();
 	next();
     }
-    var Range = ace.require('ace/range').Range;
-    var marker = editor.session.addMarker(new Range(0, 0, 0, 0), "myMarker", "fullLine");
 </script>
 
 </body>
