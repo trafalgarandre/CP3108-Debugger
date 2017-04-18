@@ -22,24 +22,32 @@ function make_debugger(code, _breakpoints) {
 	Else it will stop there and wait for the next call (NEXT BUTTON)
 */
 function debugger_next(_debugger) {	
+	// go to next yield of the generator
 	let temp = _debugger.next();
-	console.log(temp.value);
+
+	// remove the marker which shade the previous debugging line if existing
 	if (debugger_marker != null) editor.session.removeMarker(debugger_marker);
+	
 	if (!temp.done) {
 		if (debug_on) {
 			// debugger is currently run line by line.
 			debugger_result = temp.value;
-            debugger_marker = editor.session.addMarker(new Range(line_to_mark(), 0, line_to_mark(), 1), "myMarker", "fullLine");
+			// shade debugging line
+                        debugger_marker = editor.session.addMarker(new Range(line_to_mark(), 0, line_to_mark(), 1), "myMarker", "fullLine");
+			//update variable table
 			variables_table();
 			return debugger_result;
 		} else {
 			//debugger is running either from the beginning (RUN BUTTON) or run to the next breakpoint (RESUME BUTTON)
 			while (debug_on == false && !temp.done) {
 				if (check_current_line()) {
-					debug_on = true;
+					// current line has breakpoint
 					on_debug();
+					// shade debugging line
 					debugger_marker = editor.session.addMarker(new Range(line_to_mark(), 0, line_to_mark(), 1), "myMarker", "fullLine");
+					// return the value of current yield
 					debugger_result = temp.value;
+					// update variable table
 					variables_table();
 					return debugger_result;
 				} else {
@@ -49,6 +57,7 @@ function debugger_next(_debugger) {
 			}
 		}
 	}
+	// when a generator is finish, the value has not been updated
 	if (temp.done) {
 		if (temp.value != undefined) {
 			debugger_result = temp.value; 
@@ -58,27 +67,29 @@ function debugger_next(_debugger) {
 		return debugger_result;
 	}
 }
-	
+
+// this function can use to look up variable in all environments;
 function watch(_variable) {
 	console.log("WATCH");
 	return check_variable(_variable);
 }
 
+// get the line which next is stop at
 function line_to_mark() {
 	return get_current_line();	
 }
 
-get_current_val = function() {
-	return debugger_result;
-}
-
+// turn debug mode on
 function on_debug() {
     debug_on = true;
 }
 
+// turn debug mode off
 function off_debug() {
     debug_on = false;
 }
+
+// make a table of variables - values of the current environment from scratch by iterate the frame of current environment
 function variables_table() {
                 let variables = head(get_current_env());
                 let var_table = document.getElementById("variables");
@@ -106,3 +117,9 @@ function variables_table() {
                     var_table.appendChild(table_row);
                 }
             }
+
+// global function
+// return the value of the current statement/ of the whole program if finish
+get_current_val = function() {
+	return debugger_result;
+}
