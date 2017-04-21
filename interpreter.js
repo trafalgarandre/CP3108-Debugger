@@ -493,7 +493,7 @@
             }
             function* evaluate_while_statement(input_text,stmt, env) {
                 let result = undefined;
-                inter_current_line = while_predicate(stmt).log.start.line - 1;
+                inter_current_line = while_predicate(stmt).loc.start.line - 1;
                 let condition = evaluate(input_text,while_predicate(stmt), env);
                 if (check_generator(condition)) {
                     condition = evaluate_generator(condition);
@@ -1036,9 +1036,8 @@
                 if ((new Date()).getTime() > expires) {
                     throw new Error('Time limit exceeded.');
                 } else if (is_block_statement(stmt)) {
-                    let new_env = extend_environment([], [], env);  
                     stmt = evaluate_body(stmt);
-                    return evaluate(input_text, stmt, new_env);
+                    return evaluate(input_text, stmt, env);
                 } else if (is_expression(stmt)) {
                     return evaluate(input_text,stmt.expression,env);
                 } else if (is_self_evaluating(stmt)) {
