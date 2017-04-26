@@ -1594,12 +1594,10 @@
             function evaluate(input_text,stmt,env) {
                 if (stmt.type === 'Program') {
                     stmt = evaluate_body(stmt);
-                }   
-
+                }
                 if ((new Date()).getTime() > expires) {
                     throw new Error('Time limit exceeded.');
                 } else if (is_block_statement(stmt)) {
-                    //let new_env = extend_environment([], [], env);  
                     stmt = evaluate_body(stmt);
                     return evaluate(input_text, stmt, env);
                 } else if (is_expression(stmt)) {
