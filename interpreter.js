@@ -2,7 +2,7 @@
             var inter_breakpoints;
             var inter_current_line;
             var current_environment;
-
+            var environment_stack;
 
             /**
              * Parses the given string and returns the evaluated result.
@@ -1698,7 +1698,7 @@
             /// By default this is the global environment. However, if a program forces early
             /// termination, we will install the current environment so that we can evaluate
             /// expressions in the "debug" environment. This allows debugging.
-            var environment_stack = [the_global_environment];
+            environment_stack = [the_global_environment];
             environment_stack.top = function() {
                 if (this.length === 0) {
                     return null;
@@ -1901,4 +1901,9 @@
             // Get the current environment
             get_current_env = function() {
                 return current_environment;
+            }
+
+            //Get environment stack
+            get_env_stack = function() {
+                return environment_stack;
             }
