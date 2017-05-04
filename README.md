@@ -39,3 +39,10 @@ Specific information about each file:
         ii) next():
           > Only work if it is in debug mode.
           > Run the next statement - However, sometimes need to next() many times to go to next statement.
+        iii) resetBreakpoints():
+          > Clear all breakpoints
+        iv) resume():
+          > Only work if it is in debug mode.
+          > Run to the next breakpoint.
+          > Or finish if there is no breakpoint.
+2. debugger.js:
