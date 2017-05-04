@@ -46,14 +46,14 @@ Specific information about each file:
           > Run to the next breakpoint.<br />
           > Or finish if there is no breakpoint.<br />
 2. debugger.js:<br />
-    a) Global variables:
-        i) debug_on: check debug mode whether it is on or not.
-        ii) debugger_result: contain the status of the program. It is a generator if it has not finished executing, else it is the result to the console.
-        iii) debugger_marker: marker on the debugging line. (https://ace.c9.io/#nav=api&api=edit_session for further understanding 
-    b) Functions:
-        i) make_debugger(): function that connects the code on the editor with the interpreter.
-        ii) debugger_next(): function that associates with next() in the editor.
-            a) Debug mode off: Execute until find a breakpoint, else execute the whole program.
-            b) Debug mode on: Go to next statement, However, sometimes need to next() many times to go to next statement.
-            *** Reason: To take the return value of a generator, we need to run next until done = true, the corresponding value is the result. However, with a lot of generator relates to each other, taking the return value leads to more next.
+    a) Global variables:<br />
+        i) debug_on: check debug mode whether it is on or not.<br />
+        ii) debugger_result: contain the status of the program. It is a generator if it has not finished executing, else it is the result to the console.<br />
+        iii) debugger_marker: marker on the debugging line. (https://ace.c9.io/#nav=api&api=edit_session for further understanding.<br />
+    b) Functions:<br />
+        i) make_debugger(): function that connects the code on the editor with the interpreter.<br />
+        ii) debugger_next(): function that associates with next() in the editor.<br />
+            a) Debug mode off: Execute until find a breakpoint, else execute the whole program.<br />
+            b) Debug mode on: Go to next statement, However, sometimes need to next() many times to go to next statement.<br />
+            *** Reason: To take the return value of a generator, we need to run next until done = true, the corresponding value is the result. However, with a lot of generator relates to each other, taking the return value leads to more next. ***<br />
         iii)    
