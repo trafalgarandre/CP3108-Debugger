@@ -16,33 +16,33 @@ To understand more about the Debugger Demo, it is recommended to go through:
 ace.editor (https://ace.c9.io/#nav=embedding)
 
 More information about files:
-1. ace.html: a web-page to test the debugger.
-2. interpreter.js: the interpreter.
-    a) list.js.
-    b) misc.js.
-    c) object.js.
-    d) stream.js.
-3. debugger.js: the debugger.
+1. ace.html: a web-page to test the debugger.__
+2. interpreter.js: the interpreter.__
+    a) list.js.__
+    b) misc.js.__
+    c) object.js.__
+    d) stream.js.__
+3. debugger.js: the debugger.__
 
 Specific information about each file:
-1. ace.html:
-    a) Embedding Ace editor. (https://ace.c9.io/#nav=embedding)
-    b) Add / remove breakpoints. 
-        i) Add / remove breakpoints by clicking on the margin(http://stackoverflow.com/questions/16864236/how-to-mark-line-numbers-in-javascript-ace-editor).
-        ii) Store breakpoints as a set of line number. (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set) 
-    c) Illustrating method:
-        i) runButton():
-          > Run the program.
-          > Send the code and breakpoints to the debugger.
-          > If there is breakpoints, then will stop at the breakpoints (debug mode on).
-          > Else execute the whole program.
-        ii) next():
-          > Only work if it is in debug mode.
-          > Run the next statement - However, sometimes need to next() many times to go to next statement.
-        iii) resetBreakpoints():
-          > Clear all breakpoints
-        iv) resume():
-          > Only work if it is in debug mode.
-          > Run to the next breakpoint.
-          > Or finish if there is no breakpoint.
-2. debugger.js:
+1. ace.html:__
+    a) Embedding Ace editor. (https://ace.c9.io/#nav=embedding)__
+    b) Add / remove breakpoints. __
+        i) Add / remove breakpoints by clicking on the margin(http://stackoverflow.com/questions/16864236/how-to-mark-line-numbers-in-javascript-ace-editor).__
+        ii) Store breakpoints as a set of line number. (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set) __
+    c) Illustrating method:__
+        i) runButton():__
+          > Run the program.__
+          > Send the code and breakpoints to the debugger.__
+          > If there is breakpoints, then will stop at the breakpoints (debug mode on).__
+          > Else execute the whole program.__
+        ii) next():__
+          > Only work if it is in debug mode.__
+          > Run the next statement - However, sometimes need to next() many times to go to next statement.__
+        iii) resetBreakpoints():__
+          > Clear all breakpoints__
+        iv) resume():__
+          > Only work if it is in debug mode.__
+          > Run to the next breakpoint.__
+          > Or finish if there is no breakpoint.__
+2. debugger.js:__
