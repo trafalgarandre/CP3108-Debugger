@@ -6,3 +6,4 @@ have been modified to be generators).
     a) If only the function is called, it will run line by line in the function.
     b) If the function is going with other component (for example: var x = foo()), then it will pause at the return statement of the 
     function.
+    c) Need to press next many times to go to the next statement. (the reason is because there are so many generators stacking)
