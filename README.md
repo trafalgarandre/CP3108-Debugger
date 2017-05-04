@@ -25,7 +25,7 @@ More information about files:
 3. debugger.js: the debugger.<br />
 
 Specific information about each file:
-1. ace.html:__
+1. ace.html:<br />
     a) Embedding Ace editor. (https://ace.c9.io/#nav=embedding)<br />
     b) Add / remove breakpoints. <br />
         i) Add / remove breakpoints by clicking on the margin(http://stackoverflow.com/questions/16864236/how-to-mark-line-numbers-in-javascript-ace-editor).<br />
