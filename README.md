@@ -16,33 +16,33 @@ To understand more about the Debugger Demo, it is recommended to go through:
 ace.editor (https://ace.c9.io/#nav=embedding)
 
 More information about files:
-1. ace.html: a web-page to test the debugger.__
-2. interpreter.js: the interpreter.__
-    a) list.js.__
-    b) misc.js.__
-    c) object.js.__
-    d) stream.js.__
-3. debugger.js: the debugger.__
+1. ace.html: a web-page to test the debugger.<br />
+2. interpreter.js: the interpreter.<br />
+    a) list.js.<br />
+    b) misc.js.<br />
+    c) object.js.<br />
+    d) stream.js.<br />
+3. debugger.js: the debugger.<br />
 
 Specific information about each file:
 1. ace.html:__
-    a) Embedding Ace editor. (https://ace.c9.io/#nav=embedding)__
-    b) Add / remove breakpoints. __
-        i) Add / remove breakpoints by clicking on the margin(http://stackoverflow.com/questions/16864236/how-to-mark-line-numbers-in-javascript-ace-editor).__
-        ii) Store breakpoints as a set of line number. (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set) __
-    c) Illustrating method:__
-        i) runButton():__
-          > Run the program.__
-          > Send the code and breakpoints to the debugger.__
-          > If there is breakpoints, then will stop at the breakpoints (debug mode on).__
-          > Else execute the whole program.__
-        ii) next():__
-          > Only work if it is in debug mode.__
-          > Run the next statement - However, sometimes need to next() many times to go to next statement.__
-        iii) resetBreakpoints():__
-          > Clear all breakpoints__
-        iv) resume():__
-          > Only work if it is in debug mode.__
-          > Run to the next breakpoint.__
-          > Or finish if there is no breakpoint.__
-2. debugger.js:__
+    a) Embedding Ace editor. (https://ace.c9.io/#nav=embedding)<br />
+    b) Add / remove breakpoints. <br />
+        i) Add / remove breakpoints by clicking on the margin(http://stackoverflow.com/questions/16864236/how-to-mark-line-numbers-in-javascript-ace-editor).<br />
+        ii) Store breakpoints as a set of line number. (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set) <br />
+    c) Illustrating method:<br />
+        i) runButton():<br />
+          > Run the program.<br />
+          > Send the code and breakpoints to the debugger.<br />
+          > If there is breakpoints, then will stop at the breakpoints (debug mode on).<br />
+          > Else execute the whole program.<br />
+        ii) next():<br />
+          > Only work if it is in debug mode.<br />
+          > Run the next statement - However, sometimes need to next() many times to go to next statement.<br />
+        iii) resetBreakpoints():<br />
+          > Clear all breakpoints<br />
+        iv) resume():<br />
+          > Only work if it is in debug mode.<br />
+          > Run to the next breakpoint.<br />
+          > Or finish if there is no breakpoint.<br />
+2. debugger.js:<br />
