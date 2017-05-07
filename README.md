@@ -62,9 +62,9 @@ Specific information about each file:
         vi) on_debug/off_debug: mark on/off debug mode.<br />
         vii) variables_table: create the variable - value table of the current frame.<br />
 3. interpreter.js:<br />
-    a) Structure: similar to the original interpreter in SICP.
-    b) Changes:
-        i) Syntax: suitable for Esprima Parser.
-        ii) EcmaScript6 : declare local variables by "let".
-        iii) Functions to evaluate each kind of statement have become generator.
-        iV) More gloabal functions to associate with debugger.js.
+    a) Structure: similar to the original interpreter in SICP.<br />
+    b) Changes:<br />
+        i) Syntax: suitable for Esprima Parser.<br />
+        ii) EcmaScript6 : declare local variables by "let".<br />
+        iii) Functions to evaluate each kind of statement have become generator.<br />
+        iV) More gloabal functions to associate with debugger.js.<br />
