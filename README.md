@@ -10,7 +10,8 @@ How to test the debugger?
 To understand more about the interpreter, it is recommended to go through:
 1. Understand Metacircular Evaluator (http://www.comp.nus.edu.sg/~cs1101s/sicp/). 
 2. esprima.parser - since esprima.parser will be used, it is recommended to experiment with esprima parser to understand how the syntax will be dealt in the interpreter (http://esprima.org/demo/parse.html#).
-3. Go through yield + function* (generator) of EcmaScript6 (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Iterators_and_Generators) .
+3. Go through yield + function* (generator) of EcmaScript6 (https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Iterators_and_Generators).
+4. Scan through the code of interpreter from the function evaluate(input_text,stmt,env).
 
 To understand more about the Debugger Demo, it is recommended to go through:
 ace.editor (https://ace.c9.io/#nav=embedding)
@@ -68,3 +69,7 @@ Specific information about each file:
         ii) EcmaScript6 : declare local variables by "let".<br />
         iii) Functions to evaluate each kind of statement have become generator.<br />
         iV) More gloabal functions to associate with debugger.js.<br />
+    c) Generator: 2 ways of dealing.<br />
+        i) Just care about the result: use a while generator.done != true loop do generator.next() until generator.done == true then result = generator.value. (However, if there is a breakpoint then it will work like ii) from the breakpoint.<br />
+        ii) Want to run next by next: use a while generator.done != true loop do (yield; generator.next()) until generator.done == true then result = generator.value.<br />
+        
