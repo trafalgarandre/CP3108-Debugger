@@ -51,9 +51,20 @@ Specific information about each file:
         ii) debugger_result: contain the status of the program. It is a generator if it has not finished executing, else it is the result to the console.<br />
         iii) debugger_marker: marker on the debugging line. (https://ace.c9.io/#nav=api&api=edit_session for further understanding.<br />
     b) Functions:<br />
-        i) make_debugger(): function that connects the code on the editor with the interpreter.<br />
-        ii) debugger_next(): function that associates with next() in the editor.<br />
+        i) make_debugger: function that connects the code on the editor with the interpreter.<br />
+        ii) debugger_next: function that associates with next() in the editor.<br />
             a) Debug mode off: Execute until find a breakpoint, else execute the whole program.<br />
             b) Debug mode on: Go to next statement, However, sometimes need to next() many times to go to next statement.<br />
             *** Reason: To take the return value of a generator, we need to run next until done = true, the corresponding value is the result. However, with a lot of generator relates to each other, taking the return value leads to more next. ***<br />
-        iii)    
+        iii) watch: return the value associated with the input variable in the nearest frame.<br />
+        iv) line_to_mark: get the current line number which the generator stops.<br />
+        v) get_current_val: return debugger_result.<br />
+        vi) on_debug/off_debug: mark on/off debug mode.<br />
+        vii) variables_table: create the variable - value table of the current frame.<br />
+3. interpreter.js:<br />
+    a) Structure: similar to the original interpreter in SICP.
+    b) Changes:
+        i) Syntax: suitable for Esprima Parser.
+        ii) EcmaScript6 : declare local variables by "let".
+        iii) Functions to evaluate each kind of statement have become generator.
+        iV) More gloabal functions to associate with debugger.js.
