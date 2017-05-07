@@ -1,5 +1,8 @@
            // global variable
+           
+           // set of breakpoints line number
             var inter_breakpoints;
+           // line number of current evaluating statement
             var inter_current_line;
             var current_environment;
 
@@ -45,6 +48,7 @@
                 return typeof(obj) == 'object' && typeof(obj.next) == 'function';           
             }
             
+            // evaluate generator until the return value
             function evaluate_generator(gen) {
                 let next = gen.next();
                 while (!next.done) {
@@ -88,6 +92,7 @@
                 return is_tagged_object(stmt, 'UnaryExpression');
             }
             
+            // ++, --
             function is_update_expression(stmt) {
                 return is_tagged_object(stmt, 'UpdateExpression');
             }         
@@ -173,9 +178,11 @@
                 if (check_generator(argument)) {
                     let next = argument.next();
                     while (!next.done) {
+                        // if in the argument there is the breakpoint then go to that breakpoint
+                        // for example, a function with breakpoin
                         if (inter_breakpoints.has(inter_current_line)) {
                             break;
-                        } 
+                        }
                         next = argument.next();            
                     }
                     if (next.done) argument = next.value;            
@@ -1458,7 +1465,6 @@
                                     args,
                                     function_value_environment(fun));
                             let variables = function_value_variables(fun);
-                            var u = 0;
                             while (!is_empty_list(variables)) {
                                 define_variable(head(variables), undefined, env);
                                 variables = tail(variables);
